@@ -43,7 +43,7 @@ Dual-write pattern — this is how compound knowledge actually gets read:
 
 1. **Subagent writes working docs in-workspace.** Architecture notes, code analysis, READMEs — these stay in the project so the NEXT subagent benefits too.
 2. **Subagent reports key findings in structured output.** The summary and next_steps carry the essential information back to you.
-3. **You consolidate into `~/.claude/knowledge/`.** After reviewing subagent output, update your knowledge files. Subagents never write to your knowledge base directly.
+3. **You consolidate into `~/claude-assistant/knowledge/`.** After reviewing subagent output, update your knowledge files. Subagents never write to your knowledge base directly.
 
 This means project repos accumulate their own documentation (good for any collaborator), and your knowledge base stays curated (good for you).
 

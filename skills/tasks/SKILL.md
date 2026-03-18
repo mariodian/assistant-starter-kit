@@ -9,7 +9,7 @@ argument-hint: "[status | add <description> | review | done T### | metrics]"
 
 **First:** Read `LEARNINGS.md` (in this skill's directory) before proceeding.
 
-Primary store: `~/.claude/tasks.db`. Markdown export at `~/.claude/state/backlog.md` (read-only, regenerated on changes).
+Primary store: `tasks.db` (in workspace root). Markdown export at `state/backlog.md` (read-only, regenerated on changes).
 
 **Arguments:** `$ARGUMENTS`
 
@@ -31,15 +31,15 @@ Primary store: `~/.claude/tasks.db`. Markdown export at `~/.claude/state/backlog
 
 ```bash
 # Active tasks sorted by priority
-sqlite3 ~/.claude/tasks.db -header -column \
+sqlite3 ~/claude-assistant/tasks.db -header -column \
   "SELECT id, name, priority, status, effort, problems FROM tasks WHERE status != 'done' ORDER BY CASE priority WHEN 'P1' THEN 1 WHEN 'P2' THEN 2 WHEN 'P3' THEN 3 ELSE 4 END, id"
 
 # Blocked tasks
-sqlite3 ~/.claude/tasks.db -header -column \
+sqlite3 ~/claude-assistant/tasks.db -header -column \
   "SELECT id, name, blocked_by, blocked_reason FROM tasks WHERE blocked_by IS NOT NULL AND status != 'done'"
 
 # Counts
-sqlite3 ~/.claude/tasks.db \
+sqlite3 ~/claude-assistant/tasks.db \
   "SELECT (SELECT COUNT(*) FROM tasks WHERE status NOT IN ('done')) AS active, (SELECT COUNT(*) FROM tasks WHERE status='done') AS completed, (SELECT COUNT(*) FROM tasks WHERE blocked_by IS NOT NULL AND status != 'done') AS blocked"
 ```
 
@@ -52,8 +52,8 @@ Flag:
 ## Add Task
 
 1. Parse `<description>` from arguments
-2. Get next ID: `sqlite3 ~/.claude/tasks.db "SELECT value FROM config WHERE key='next_id'"`
-3. Read `~/.claude/knowledge/problems/00-overview.md` to know the user's problems
+2. Get next ID: `sqlite3 ~/claude-assistant/tasks.db "SELECT value FROM config WHERE key='next_id'"`
+3. Read `knowledge/problems/00-overview.md` to know the user's problems
 4. Ask: which problems (by number) does this relate to? Effort (S/M/L)? Which subgoal?
 5. Evaluate priority:
    - Problems >= 3 -- strong P1 candidate
@@ -63,18 +63,18 @@ Flag:
 6. On approval, insert via sqlite3:
 
 ```bash
-sqlite3 ~/.claude/tasks.db "INSERT INTO tasks (id, name, priority, problems, effort, status, subgoal, created_at, updated_at) VALUES ('T###', 'Name', 'P2', '1,4', 'M', 'pending', 'S1', '$(date +%Y-%m-%d)', '$(date -u +%Y-%m-%dT%H:%M:%SZ)')"
+sqlite3 ~/claude-assistant/tasks.db "INSERT INTO tasks (id, name, priority, problems, effort, status, subgoal, created_at, updated_at) VALUES ('T###', 'Name', 'P2', '1,4', 'M', 'pending', 'S1', '$(date +%Y-%m-%d)', '$(date -u +%Y-%m-%dT%H:%M:%SZ)')"
 ```
 
-7. Increment next_id: `sqlite3 ~/.claude/tasks.db "UPDATE config SET value='T###' WHERE key='next_id'"`
-8. Re-export: `python3 ~/.claude/scripts/db.py export`
+7. Increment next_id: `sqlite3 ~/claude-assistant/tasks.db "UPDATE config SET value='T###' WHERE key='next_id'"`
+8. Re-export: `python3 ~/claude-assistant/scripts/db.py export`
 
 ---
 
 ## Review & Reprioritize
 
 1. Show all active tasks
-2. Read `~/.claude/knowledge/problems/00-overview.md` and `~/.claude/knowledge/user/goals.md`
+2. Read `knowledge/problems/00-overview.md` and `knowledge/user/goals.md`
 3. For each task: priority still correct? Stale? Blocking others? Connected to active subgoal?
 4. Present proposed changes: `| ID | Current P | Proposed P | Reason |`
 5. On approval, update and re-export
@@ -87,10 +87,10 @@ sqlite3 ~/.claude/tasks.db "INSERT INTO tasks (id, name, priority, problems, eff
 2. Update:
 
 ```bash
-sqlite3 ~/.claude/tasks.db "UPDATE tasks SET status='done', completed_at='$(date +%Y-%m-%d)', updated_at='$(date -u +%Y-%m-%dT%H:%M:%SZ)' WHERE id='T###'"
+sqlite3 ~/claude-assistant/tasks.db "UPDATE tasks SET status='done', completed_at='$(date +%Y-%m-%d)', updated_at='$(date -u +%Y-%m-%dT%H:%M:%SZ)' WHERE id='T###'"
 ```
 
-3. Re-export: `python3 ~/.claude/scripts/db.py export`
+3. Re-export: `python3 ~/claude-assistant/scripts/db.py export`
 4. Show: task name, problems addressed, days from created to done
 5. Suggest next task based on priority
 
@@ -100,13 +100,13 @@ sqlite3 ~/.claude/tasks.db "UPDATE tasks SET status='done', completed_at='$(date
 
 ```bash
 # Completed this week
-sqlite3 ~/.claude/tasks.db "SELECT COUNT(*) as done_this_week FROM tasks WHERE status='done' AND completed_at >= date('now', '-7 days')"
+sqlite3 ~/claude-assistant/tasks.db "SELECT COUNT(*) as done_this_week FROM tasks WHERE status='done' AND completed_at >= date('now', '-7 days')"
 
 # Active count by priority
-sqlite3 ~/.claude/tasks.db "SELECT priority, COUNT(*) as count FROM tasks WHERE status != 'done' GROUP BY priority ORDER BY priority"
+sqlite3 ~/claude-assistant/tasks.db "SELECT priority, COUNT(*) as count FROM tasks WHERE status != 'done' GROUP BY priority ORDER BY priority"
 
 # Average days to complete
-sqlite3 ~/.claude/tasks.db "SELECT ROUND(AVG(julianday(completed_at) - julianday(created_at)), 1) as avg_days FROM tasks WHERE status='done' AND completed_at IS NOT NULL"
+sqlite3 ~/claude-assistant/tasks.db "SELECT ROUND(AVG(julianday(completed_at) - julianday(created_at)), 1) as avg_days FROM tasks WHERE status='done' AND completed_at IS NOT NULL"
 ```
 
 ---

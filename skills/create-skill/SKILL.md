@@ -31,10 +31,10 @@ Keep questions to one message. Don't over-interview.
 Run the init script:
 
 ```bash
-python3 ~/.claude/skills/create-skill/scripts/init_skill.py <skill-name> --path ~/.claude/skills
+python3 .claude/skills/create-skill/scripts/init_skill.py <skill-name> --path .claude/skills
 ```
 
-This creates the directory with template files. If `--path` is omitted, defaults to `~/.claude/skills`.
+This creates the directory with template files. If `--path` is omitted, defaults to `.claude/skills` in the current workspace.
 
 ### Step 3: Write SKILL.md
 
@@ -98,7 +98,7 @@ Delete any empty dirs the init script created that aren't needed.
 Check the result:
 
 ```bash
-python3 ~/.claude/skills/create-skill/scripts/validate_skill.py ~/.claude/skills/<skill-name>
+python3 .claude/skills/create-skill/scripts/validate_skill.py .claude/skills/<skill-name>
 ```
 
 Fix any issues reported.
@@ -112,5 +112,5 @@ Add the new skill to the `CLAUDE.md` Available Skills section.
 - One skill = one concern. Don't bundle unrelated workflows.
 - Description is the trigger — if it's vague, the skill won't activate when needed.
 - SKILL.md is for another Claude instance. Include what's non-obvious, skip what any model already knows.
-- No hardcoded absolute paths except `~/.claude/` and `~/`. Use relative paths within the skill dir.
+- No hardcoded absolute paths except `~/claude-assistant/` and `~/`. Use relative paths within the skill dir.
 - Test the skill by running it once before reporting done.

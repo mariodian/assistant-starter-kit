@@ -1,15 +1,15 @@
 # Task Alignment Rules
 
 ## Source of Truth
-- **SQLite** (`~/.claude/tasks.db`) is the primary task store. ALL writes go through SQLite.
-- **backlog.md** (`~/.claude/state/backlog.md`) is a read-only export. NEVER edit it directly.
-- After any SQLite write, re-export: `python3 ~/.claude/scripts/db.py export`
+- **SQLite** (`~/claude-assistant/tasks.db`) is the primary task store. ALL writes go through SQLite.
+- **backlog.md** (`~/claude-assistant/state/backlog.md`) is a read-only export. NEVER edit it directly.
+- After any SQLite write, re-export: `python3 ~/claude-assistant/scripts/db.py export`
 - Use `/tasks` skill for all task operations (add, complete, review, metrics).
 
 ## Before Substantive Work
 When the user requests work that will take more than ~5 minutes:
 
-1. Check active tasks: `sqlite3 ~/.claude/tasks.db "SELECT id, name, priority FROM tasks WHERE status <> 'done' ORDER BY priority, id"`
+1. Check active tasks: `sqlite3 ~/claude-assistant/tasks.db "SELECT id, name, priority FROM tasks WHERE status <> 'done' ORDER BY priority, id"`
 2. Does this work map to an active P1 or P2 task?
    - **YES** — proceed, reference the task ID in session notes
    - **NO** — flag: "This doesn't map to an active task. Want to add it to the backlog, or continue anyway?"
@@ -34,8 +34,8 @@ Research that seems like a "quick question" can become substantive (web searches
 
 ## After Completing a Task
 When substantive work on a task is finished:
-1. Update SQLite: `sqlite3 ~/.claude/tasks.db "UPDATE tasks SET status='done', completed_at='YYYY-MM-DD', updated_at=datetime('now') WHERE id='T###'"`
-2. Re-export: `python3 ~/.claude/scripts/db.py export`
+1. Update SQLite: `sqlite3 ~/claude-assistant/tasks.db "UPDATE tasks SET status='done', completed_at='YYYY-MM-DD', updated_at=datetime('now') WHERE id='T###'"`
+2. Re-export: `python3 ~/claude-assistant/scripts/db.py export`
 3. Stage `backlog.md` in the next git commit — don't leave the export uncommitted
 4. Update MEMORY.md Active Tasks table
 5. Suggest the next task based on priority — don't wait for the user to ask
@@ -45,7 +45,7 @@ Before session end, update tasks via SQLite:
 - Change status of tasks worked on (`pending` to `in_progress`, or to `done`)
 - Add completion date for finished tasks
 - Add new tasks that emerged during the session
-- Re-export: `python3 ~/.claude/scripts/db.py export`
+- Re-export: `python3 ~/claude-assistant/scripts/db.py export`
 
 ## Task Conventions
 - **IDs:** `T` + 3-digit counter, monotonic, never reused

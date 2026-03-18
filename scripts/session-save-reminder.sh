@@ -6,8 +6,11 @@
 
 set -euo pipefail
 
+WORKSPACE=$(cat "$HOME/.claude/workspace.conf" 2>/dev/null || echo "$HOME/claude-assistant")
 MARKER="$HOME/.claude/state/.session-start"
 REMINDED="$HOME/.claude/state/.session-reminded"
+
+mkdir -p "$HOME/.claude/state"
 
 # First call: record session start time
 if [[ ! -f "$MARKER" ]]; then
@@ -30,17 +33,17 @@ if [[ $DURATION -lt 600 ]]; then
 fi
 
 # Check if a session note was already created recently
-RECENT_NOTE=$(find "$HOME/.claude/state/sessions/" -name "*.md" -mmin -10 2>/dev/null | head -1)
+RECENT_NOTE=$(find "$WORKSPACE/state/sessions/" -name "*.md" -mmin -10 2>/dev/null | head -1)
 if [[ -n "$RECENT_NOTE" ]]; then
   exit 0
 fi
 
 # One-time reminder
 touch "$REMINDED"
-cat >&2 << 'REMINDER'
+cat >&2 << REMINDER
 Session running >10min. Before ending or compacting:
 1. UPDATE MEMORY.md — write current state and next steps
 2. CREATE SESSION NOTE in state/sessions/ — summary, decisions, files changed, open items
-3. COMMIT AND PUSH ~/.claude if knowledge files changed
+3. COMMIT AND PUSH ~/claude-assistant if knowledge files changed
 REMINDER
 exit 2

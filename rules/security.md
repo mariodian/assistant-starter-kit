@@ -26,5 +26,5 @@ NON-NEGOTIABLE. These apply globally.
 - When building security-sensitive infrastructure, establish and get approval on the security rules BEFORE writing any code
 
 ## Project Isolation
-- **Third-party projects** (family, clients): own repo, CLAUDE.md boundary rule ("Do NOT update ~/.claude/knowledge/, MEMORY.md, or task backlog"), session notes local.
+- **Third-party projects** (family, clients): own repo, CLAUDE.md boundary rule ("Do NOT update ~/claude-assistant/knowledge/, MEMORY.md, or task backlog"), session notes local.
 - **Work projects**: protect with `global-guard.py` rules. Add company-specific blocks as needed (e.g., read-only repos, no autonomous push).

@@ -74,8 +74,8 @@ def main():
     parser.add_argument("skill_name", help="kebab-case name (e.g., 'my-skill')")
     parser.add_argument(
         "--path",
-        default=str(Path.home() / ".claude" / "skills"),
-        help="Parent directory (default: ~/.claude/skills)",
+        default=".claude/skills",
+        help="Parent directory (default: .claude/skills in current workspace)",
     )
     args = parser.parse_args()
 

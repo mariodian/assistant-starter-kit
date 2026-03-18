@@ -8,10 +8,11 @@
 
 set -euo pipefail
 
-STATE_DIR="$HOME/.claude/state"
+WORKSPACE=$(cat "$HOME/.claude/workspace.conf" 2>/dev/null || echo "$HOME/claude-assistant")
+STATE_DIR="$WORKSPACE/state"
 STATE_FILE="$STATE_DIR/pre-compact-state.md"
 DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
-KB_DIR="$HOME/.claude/knowledge"
+KB_DIR="$WORKSPACE/knowledge"
 
 mkdir -p "$STATE_DIR"
 
@@ -41,7 +42,7 @@ if git rev-parse --is-inside-work-tree &>/dev/null; then
 fi
 
 # --- Recently modified files ---
-RECENT=$(find "${CLAUDE_PROJECT_DIR:-.}" -type f -mmin -30 \
+RECENT=$(find "${CLAUDE_PROJECT_DIR:-$WORKSPACE}" -type f -mmin -30 \
   -not -path '*/.git/*' \
   -not -path '*/node_modules/*' \
   -not -path '*/__pycache__/*' \
@@ -90,5 +91,5 @@ ${RECENT:-None detected}
 ${KB_INDEX:-No knowledge files found.}
 EOF
 
-echo "Pre-compaction state saved. Read ~/.claude/state/pre-compact-state.md to recover context."
+echo "Pre-compaction state saved to $STATE_FILE"
 exit 0

@@ -20,7 +20,7 @@ You are running a 4-phase reflection workflow. Follow each phase in order.
 Run the extraction script to get candidate learnings from session JSONL.
 
 ```bash
-python3 ~/.claude/scripts/extract-learnings.py $ARGUMENTS
+python3 ~/claude-assistant/scripts/extract-learnings.py $ARGUMENTS
 ```
 
 If `$ARGUMENTS` is empty, it analyzes the latest session. Pass `--since YYYY-MM-DD` or `--file <path>` to customize scope.
@@ -41,7 +41,7 @@ For each candidate pair from Phase 1, determine:
    - Workflow patterns (user repeatedly does something a specific way)
    - Implicit feedback (user rephrases, asks again, provides what Claude should have known)
 
-2. **Check rejections** — Read `~/.claude/knowledge/self/rejections.md`. For each candidate:
+2. **Check rejections** — Read `~/claude-assistant/knowledge/self/rejections.md`. For each candidate:
    - If it matches a previously rejected learning (same topic + target file): **skip silently**. Note in output: "Skipped: matches rejected learning from [date]"
    - If it *contradicts* a previously rejected learning (opposite of what was rejected): flag as **potential reversal** — present to user with context from the rejection log
 
@@ -59,16 +59,16 @@ For each candidate pair from Phase 1, determine:
         Existing: "[quoted text]"
         Proposed: "[new learning]"
       ```
-   e. **Update feedback counters** — If the contradiction traces to a specific existing rule/learning entry, increment its `harmful` counter in `state/rule-feedback.json`
+   e. **Update feedback counters** — If the contradiction traces to a specific existing rule/learning entry, increment its `harmful` counter in `~/claude-assistant/state/rule-feedback.json`
 
-6. **Update feedback counters** — Read `~/.claude/state/rule-feedback.json` (create if missing). For each finding:
+6. **Update feedback counters** — Read `~/claude-assistant/state/rule-feedback.json` (create if missing). For each finding:
 
    a. If a correction **contradicts** an existing rule -- increment `harmful` for that rule:
       - Key format: `"<relative-path>::<section or first 60 chars of rule>"`
 
    b. If the session had **no corrections** in an area covered by a rule, and the rule was relevant to work done this session -- increment `helpful`
 
-   c. Write updated counters back to `state/rule-feedback.json`
+   c. Write updated counters back to `~/claude-assistant/state/rule-feedback.json`
 
    d. **Flag unhealthy rules** for Phase 3:
       - `harmful >= 3` -- flag: "This rule has been contradicted 3 times. Review or remove?"
@@ -91,19 +91,19 @@ For each candidate pair from Phase 1, determine:
 | Delegation pattern | `~/.claude/rules/delegation.md` |
 | Development standard | `~/.claude/rules/development.md` |
 | Research convention | `~/.claude/rules/research.md` |
-| User profile update | `~/.claude/knowledge/user/profile.md` |
-| User goals update | `~/.claude/knowledge/user/goals.md` |
-| Self-knowledge | `~/.claude/knowledge/self/identity.md` |
-| Problem insight | `~/.claude/knowledge/problems/NN-*.md` Insights Log |
-| Project state change | `~/.claude/knowledge/projects/<project>.md` |
+| User profile update | `~/claude-assistant/knowledge/user/profile.md` |
+| User goals update | `~/claude-assistant/knowledge/user/goals.md` |
+| Self-knowledge | `~/claude-assistant/knowledge/self/identity.md` |
+| Problem insight | `~/claude-assistant/knowledge/problems/NN-*.md` Insights Log |
+| Project state change | `~/claude-assistant/knowledge/projects/<project>.md` |
 | Global convention | `~/.claude/CLAUDE.md` |
 | Recurring pattern (3+ sessions) | `~/.claude/rules/` (new file or existing) |
-| Actionable work identified | SQLite via `sqlite3 ~/.claude/tasks.db` then `python3 ~/.claude/scripts/db.py export` |
+| Actionable work identified | SQLite via `sqlite3 ~/claude-assistant/tasks.db` then `python3 ~/claude-assistant/scripts/db.py export` |
 | MEMORY.md state change | MEMORY.md (sparingly) |
 
 **Routing priority:** Rules files > Knowledge files > MEMORY.md > CLAUDE.md
 
-**Problem routing:** Read `~/.claude/knowledge/problems/00-overview.md` to match findings against the user's problems.
+**Problem routing:** Read `~/claude-assistant/knowledge/problems/00-overview.md` to match findings against the user's problems.
 
 ---
 
@@ -158,7 +158,7 @@ If no real learnings found: tell user "Analyzed N pairs, no actionable learnings
 When user discards findings:
 
 1. Ask: **"Brief reason? (or Enter to skip)"**
-2. Append to `~/.claude/knowledge/self/rejections.md`:
+2. Append to `~/claude-assistant/knowledge/self/rejections.md`:
    ```markdown
    ### YYYY-MM-DD — Rejected
    - **Proposed:** [the learning]
@@ -180,5 +180,5 @@ For each approved finding:
 After all edits:
 
 1. Summarize what was changed: `| File | Change |` table
-2. Stage `state/rule-feedback.json` if counters were updated
+2. Stage `~/claude-assistant/state/rule-feedback.json` if counters were updated
 3. Commit with message `reflect: capture session learnings`

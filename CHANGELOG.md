@@ -5,6 +5,47 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.0.0] - 2026-03-18
+
+### Changed (BREAKING)
+
+- **Split architecture** — `~/.claude/` now contains only minimal global config (rules, hooks, guard). Everything else lives in a bootstrapped workspace (default: `~/claude-assistant/`). This keeps `~/.claude/` lean and puts assistant data in a proper version-controlled workspace.
+- **`setup.sh` — two-phase install.** Phase 1 installs global config to `~/.claude/`. Phase 2 bootstraps the workspace directory. Users choose the workspace name (default: `claude-assistant`).
+- **Skills moved to workspace** — All 6 skills now live in `~/claude-assistant/.claude/skills/` instead of `~/.claude/skills/`. They activate when Claude runs from the workspace.
+- **Agents moved to workspace** — Agent definitions now in `~/claude-assistant/agents/`.
+- **Task database moved to workspace** — `tasks.db` and `scripts/db.py` now in `~/claude-assistant/`.
+- **Knowledge moved to workspace** — `knowledge/` now in `~/claude-assistant/knowledge/`.
+- **State moved to workspace** — `state/sessions/`, `state/backlog.md`, `state/rule-feedback.json` now in workspace. Guard audit log stays at `~/.claude/state/guard-log.jsonl` (global security).
+- **Hook scripts workspace-aware** — `pre-compact.sh`, `post-compact-reinject.sh`, `session-save-reminder.sh` read workspace path from `~/.claude/workspace.conf`.
+- **All path references updated** — Rules, skills, and scripts reference `~/claude-assistant/` instead of `~/.claude/` for workspace data.
+- **CLAUDE.md split** — Global `~/.claude/CLAUDE.md` is minimal (~25 lines, points to workspace). Workspace `.claude/CLAUDE.md` has detailed instructions.
+
+### Added
+
+- `~/.claude/workspace.conf` — stores workspace path, read by hook scripts
+- `templates/global-CLAUDE.md` — minimal global instructions template
+- `templates/workspace-CLAUDE.md` — detailed workspace instructions template
+- `templates/workspace-gitignore` — gitignore for the workspace directory
+
+### Removed
+
+- `templates/CLAUDE.md` — replaced by `global-CLAUDE.md` + `workspace-CLAUDE.md`
+
+### Migration from v2.x
+
+If upgrading from v2.x, you'll need to:
+1. Re-run `setup.sh` (backs up nothing — save your knowledge/ and tasks.db first)
+2. Copy `~/.claude/knowledge/` to `~/claude-assistant/knowledge/`
+3. Copy `~/.claude/tasks.db` to `~/claude-assistant/tasks.db`
+4. Copy `~/.claude/state/sessions/` to `~/claude-assistant/state/sessions/`
+5. Copy `~/.claude/MEMORY.md` to `~/claude-assistant/MEMORY.md`
+
+### Files
+
+- 3 new templates: `global-CLAUDE.md`, `workspace-CLAUDE.md`, `workspace-gitignore`
+- 1 removed template: `CLAUDE.md`
+- Modified: all rules, all skills, all hook scripts, `setup.sh`, `README.md`, `CHANGELOG.md`
+
 ## [2.1.0] - 2026-03-18
 
 ### Added
@@ -116,6 +157,7 @@ First stable release.
 - 5 scripts: global-guard.py, db.py, extract-learnings.py, pre-compact.sh, session-save-reminder.sh
 - 3 templates: CLAUDE.md, settings.json, gitignore
 
+[3.0.0]: https://github.com/mp-web3/claude-starter-kit/compare/v2.1.0...v3.0.0
 [2.1.0]: https://github.com/mp-web3/claude-starter-kit/compare/v2.0.0...v2.1.0
 [2.0.0]: https://github.com/mp-web3/claude-starter-kit/compare/v1.1.1...v2.0.0
 [1.1.1]: https://github.com/mp-web3/claude-starter-kit/releases/tag/v1.1.1

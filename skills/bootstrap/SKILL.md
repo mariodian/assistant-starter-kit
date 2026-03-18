@@ -186,6 +186,6 @@ Do NOT push without user approval.
 - **Never dump architecture into CLAUDE.md.** That's what CODEBASE.md and docs/ are for.
 - **Docs describe behavior, not API surface.** Write for an agent that needs to understand the codebase without reading every file.
 - **Only create files for things that exist.** Don't create `knowledge/react.md` if the project doesn't use React.
-- **Third-party projects get isolation.** Add to CLAUDE.md: `Do NOT update ~/.claude/knowledge/, MEMORY.md, or task backlog for this project.`
+- **Third-party projects get isolation.** Add to CLAUDE.md: `Do NOT update ~/claude-assistant/knowledge/, MEMORY.md, or task backlog for this project.`
 - **Don't over-document.** Start lean. Fill gaps over time as you learn what's actually needed.
 - **Adapt, don't template.** Every project is different. The structure above is a guide, not a rigid template. A 3-file Python script doesn't need module docs.

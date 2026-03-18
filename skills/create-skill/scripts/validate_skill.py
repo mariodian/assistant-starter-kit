@@ -53,12 +53,12 @@ def validate(skill_dir: Path) -> list[str]:
         if f.name in bad_files:
             errors.append(f"Extraneous file: {f.name} (not needed in skills)")
 
-    # Check referenced files exist
-    for match in re.finditer(r"references/[\w.-]+", content):
+    # Check referenced files exist (only relative paths, not absolute like ~/... or /...)
+    for match in re.finditer(r"(?<![~/\w])references/[\w.-]+", content):
         ref = skill_dir / match.group()
         if not ref.exists():
             errors.append(f"Referenced file missing: {match.group()}")
-    for match in re.finditer(r"scripts/[\w.-]+", content):
+    for match in re.finditer(r"(?<![~/\w])scripts/[\w.-]+", content):
         script = skill_dir / match.group()
         if not script.exists():
             errors.append(f"Referenced script missing: {match.group()}")

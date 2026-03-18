@@ -1,47 +1,65 @@
 # Claude Code Starter Kit
 
-A pre-built `~/.claude/` configuration that gives Claude Code persistent memory, security guardrails, and structured workflows. Clone, run `setup.sh`, and your next session picks up where the last one left off.
+A pre-built configuration that gives Claude Code persistent memory, security guardrails, and structured workflows. Clone, run `setup.sh`, and your next session picks up where the last one left off.
 
 ## How It Works
 
-Claude Code reads `~/.claude/` at startup. This kit installs files there — rules, skills, scripts, and a knowledge directory — so every session starts with context about who you are, what you're building, and how to behave.
+Claude Code reads `~/.claude/` at startup. This kit installs minimal global config there — rules, security hooks, and a pointer to your workspace. The workspace (`~/claude-assistant/`) holds everything else: knowledge, skills, tasks, agents, and session history.
 
 ```
-You run setup.sh ──> Files copied to ~/.claude/ ──> Claude reads them at startup
-                                                          |
-                              ┌────────────────────────────┤
-                              v                            v
-                     Always loaded:              Loaded on demand:
-                     - CLAUDE.md                 - knowledge/user/profile.md
-                     - rules/*.md                - knowledge/user/goals.md
-                     - MEMORY.md (200 lines)     - knowledge/problems/*.md
-                                                 - knowledge/projects/*.md
+You run setup.sh ──> Phase 1: Minimal config to ~/.claude/
+                     Phase 2: Full workspace at ~/claude-assistant/
+
+~/.claude/ (global, every project)     ~/claude-assistant/ (workspace)
+├── CLAUDE.md (pointer)                ├── .claude/CLAUDE.md (detailed)
+├── settings.json (hooks)              ├── .claude/skills/ (6 skills)
+├── rules/ (behavioral)               ├── knowledge/ (on-demand)
+├── scripts/ (4 hook scripts)          ├── agents/ (4 definitions)
+└── statusline.sh                      ├── scripts/ (db, learnings)
+                                       ├── state/ (sessions, backlog)
+                                       ├── MEMORY.md (200 lines)
+                                       └── tasks.db (SQLite)
 ```
 
-**On-demand loading is how this avoids context bloat.** Your `CLAUDE.md` contains a markdown table — a map of file paths and one-line descriptions. Claude sees the table at startup (~20-30 lines), then uses `Read` to open specific files when they're relevant to the current task. A typical session loads 3-5 files out of however many you have.
+**Why the split?** `~/.claude/` is Claude Code's config directory — it should stay lean. Rules and hooks load every session regardless of project. Knowledge, tasks, and skills live in the workspace, loaded only when you're working there. This keeps `~/.claude/` clean and your assistant data in a proper, version-controlled workspace.
 
-This is different from the `@import` syntax in `CLAUDE.md`, which loads files into every session unconditionally. Use `@import` for things you always want (rules). Use the table for everything else.
+**On-demand loading is how this avoids context bloat.** The workspace CLAUDE.md contains a table of file paths and one-line descriptions. Claude sees the table at startup (~20-30 lines), then uses `Read` to open specific files when relevant. A typical session loads 3-5 files out of however many you have.
 
 ## What's Included
 
 | Component | What It Does |
 |---|---|
-| `/onboard` | 20-30 min guided setup: profile, 12 Favorite Problems, goals, tasks, AI identity |
+| `/onboard` | 20-30 min guided setup: profile, 12 Favorite Problems, goals, tasks |
 | `/tasks` | SQLite-backed task management. Tasks connect to your goals and problems |
 | `/plan` | 6-phase gated workflow: explore, discover tools, design, approve, implement, verify |
 | `/reflect` | Extracts corrections and preferences from sessions, routes them to the right files |
-| `/bootstrap` | Sets up any project's `.claude/` for agentic development (CLAUDE.md, CODEBASE.md, docs/) |
+| `/bootstrap` | Sets up any project's `.claude/` for agentic development |
 | `/create-skill` | Scaffolds new skills with validation — extend the system with your own workflows |
-| Security guard | Blocks secrets access, force-push, writes outside `$HOME`, `rm -rf`. Audit log at `state/guard-log.jsonl` |
+| Security guard | Blocks secrets access, force-push, writes outside `$HOME`, `rm -rf`. Audit log at `~/.claude/state/guard-log.jsonl` |
 | Session persistence | Pre-compact hook saves state, post-compact hook re-injects critical rules. Session reminders after 10 min |
 | Delegation rules | Subagent orchestration: authority boundaries, knowledge flow, quality control |
 | Agent definitions | 4 pre-built agents: code-reviewer, bug-fixer, implementer, researcher |
 | Development standards | Code quality limits, testing philosophy, commit conventions |
 | Radical honesty | No flattery, no hype — specific praise when earned, problems first |
 
-## Setup (5 minutes)
+## Requirements
 
-**Prerequisites:** [Claude Code CLI](https://docs.anthropic.com/en/docs/claude-code), Git, Python 3.10+, jq (`brew install jq` on macOS)
+| Dependency | Minimum | Why | Install |
+|---|---|---|---|
+| [Claude Code CLI](https://docs.anthropic.com/en/docs/claude-code) | latest | Core runtime | `npm i -g @anthropic-ai/claude-code` or `brew install claude-code` |
+| Git | 2.x | Version control for config and workspace | Pre-installed on macOS; `apt install git` on Linux |
+| Python | 3.10+ | Security guard, task database, learning extractor | Pre-installed on macOS; `apt install python3` on Linux |
+| jq | 1.6+ | Statusline and hook scripts | `brew install jq` / `apt install jq` |
+| SQLite | 3.x | Task database — CLI used in rules/skills for queries | Pre-installed on macOS; `apt install sqlite3` on Linux |
+| Bash | 4.x+ | Hook scripts | Pre-installed |
+
+**Optional:** `trash` (`brew install trash` on macOS, `apt install trash-cli` on Linux) — safe alternative to `rm -rf`, recommended by the security guard.
+
+**Note:** Python's built-in `sqlite3` module handles database operations via `db.py`. The `sqlite3` CLI is used in rules and skills for quick inline queries.
+
+**Supported platforms:** macOS, Linux. Windows via WSL should work but is untested.
+
+## Setup (5 minutes)
 
 ```bash
 git clone https://github.com/mp-web3/claude-starter-kit.git
@@ -49,12 +67,12 @@ cd claude-starter-kit
 ./setup.sh
 ```
 
-The script checks dependencies, copies files to `~/.claude/`, asks for your name and bio, and initializes a git repo.
+The script checks dependencies, asks for your name, bio, and workspace directory (default: `~/claude-assistant`), then installs files in two phases.
 
 Then start your first session:
 
 ```bash
-cd ~/.claude
+cd ~/claude-assistant
 claude
 ```
 
@@ -62,11 +80,13 @@ Type `/onboard` — Claude walks you through defining your profile, problems, go
 
 ## Directory Structure
 
+### Global Config (`~/.claude/`)
+
 ```
 ~/.claude/
-├── CLAUDE.md                  # Global instructions (loads every session)
-├── MEMORY.md                  # Cross-session index (first 200 lines auto-loaded)
+├── CLAUDE.md                  # Minimal global instructions (points to workspace)
 ├── settings.json              # Hooks, permissions, security config
+├── workspace.conf             # Path to workspace directory
 ├── rules/
 │   ├── communication.md       # Radical honesty, verification, review protocol
 │   ├── security.md            # Path boundaries, secrets, git discipline
@@ -75,47 +95,60 @@ Type `/onboard` — Claude walks you through defining your profile, problems, go
 │   ├── delegation.md          # Subagent orchestration patterns
 │   ├── development.md         # Code quality, testing, commits
 │   └── research.md            # Source priority, endpoint verification, output format
-├── agents/
-│   ├── code-reviewer.md       # Reviews diffs for bugs, security, style
-│   ├── bug-fixer.md           # Investigates, reproduces, fixes bugs + writes tests
-│   ├── implementer.md         # Implements features from a plan/spec
-│   └── researcher.md          # Explores codebases and docs, returns structured findings
 ├── scripts/
 │   ├── global-guard.py        # Security: path boundaries, secrets blocking
-│   ├── db.py                  # SQLite task database
-│   ├── extract-learnings.py   # Session JSONL parser for /reflect
 │   ├── pre-compact.sh         # Saves state before context compression
 │   ├── post-compact-reinject.sh # Re-injects critical rules after compaction
 │   └── session-save-reminder.sh
-├── skills/
-│   ├── onboard/SKILL.md       # Guided first-session setup
-│   ├── tasks/SKILL.md         # Task management
-│   ├── plan-and-implement/    # Structured build workflow
-│   │   ├── SKILL.md
-│   │   └── LEARNINGS.md
-│   ├── reflect/               # Session learning extraction
-│   │   ├── SKILL.md
-│   │   └── LEARNINGS.md
-│   ├── bootstrap/             # Project .claude/ setup
-│   │   ├── SKILL.md
-│   │   └── LEARNINGS.md
-│   └── create-skill/          # Skill scaffolding + validation
-│       ├── SKILL.md
-│       ├── LEARNINGS.md
-│       └── scripts/
-│           ├── init_skill.py
-│           └── validate_skill.py
+└── statusline.sh              # Context %, cost, branch info
+```
+
+### Workspace (`~/claude-assistant/`)
+
+The `.claude/` directory inside the workspace is standard Claude Code project config — it holds the project-level CLAUDE.md and skills. This is separate from the global `~/.claude/`. Claude Code discovers skills from `<project>/.claude/skills/` automatically.
+
+```
+~/claude-assistant/
+├── .claude/                   # Project-level Claude Code config
+│   ├── CLAUDE.md              # Detailed workspace instructions
+│   └── skills/                # Skills available when running from this workspace
+│       ├── onboard/SKILL.md   # Guided first-session setup
+│       ├── tasks/SKILL.md     # Task management
+│       ├── plan-and-implement/ # Structured build workflow
+│       │   ├── SKILL.md
+│       │   └── LEARNINGS.md
+│       ├── reflect/           # Session learning extraction
+│       │   ├── SKILL.md
+│       │   └── LEARNINGS.md
+│       ├── bootstrap/         # Project .claude/ setup
+│       │   ├── SKILL.md
+│       │   └── LEARNINGS.md
+│       └── create-skill/      # Skill scaffolding + validation
+│           ├── SKILL.md
+│           ├── LEARNINGS.md
+│           └── scripts/
+│               ├── init_skill.py
+│               └── validate_skill.py
 ├── knowledge/                 # Claude reads these on demand
 │   ├── self/identity.md       # AI self-knowledge (created by /onboard)
 │   ├── user/profile.md        # Your profile (created by /onboard)
 │   ├── user/goals.md          # Goals and subgoals (created by /onboard)
 │   ├── problems/              # Your 12 problems (created by /onboard)
 │   └── projects/              # Project-specific knowledge (grows over time)
+├── agents/
+│   ├── code-reviewer.md       # Reviews diffs for bugs, security, style
+│   ├── bug-fixer.md           # Investigates, reproduces, fixes bugs + writes tests
+│   ├── implementer.md         # Implements features from a plan/spec
+│   └── researcher.md          # Explores codebases and docs, returns structured findings
+├── scripts/
+│   ├── db.py                  # SQLite task database
+│   └── extract-learnings.py   # Session JSONL parser for /reflect
 ├── state/
 │   ├── sessions/              # Session logs
 │   ├── backlog.md             # Task backlog (auto-exported from SQLite)
 │   └── rule-feedback.json     # Rule health counters (from /reflect)
-└── statusline.sh              # Context %, cost, branch info
+├── MEMORY.md                  # Cross-session index (first 200 lines auto-loaded)
+└── tasks.db                   # SQLite task store (gitignored)
 ```
 
 ## Security Guard
@@ -132,17 +165,17 @@ The guard script (`scripts/global-guard.py`) hooks into Claude Code's `PreToolUs
 
 **How it works:** The guard is configured in `settings.json` as a `PreToolUse` hook. Claude Code sends the tool name and input as JSON to stdin. The script checks against its rules and returns `{"allow": true}` or `{"blocked": true, "reason": "..."}`. Claude sees the reason and adjusts.
 
-Every blocked action is logged to `state/guard-log.jsonl` with timestamp, tool name, reason, and context. Review with:
+Every blocked action is logged to `~/.claude/state/guard-log.jsonl` with timestamp, tool name, reason, and context. Review with:
 
 ```bash
 cat ~/.claude/state/guard-log.jsonl | python3 -m json.tool
 ```
 
-Customize by editing `scripts/global-guard.py` — add directory blocks, file extension rules, or stricter rules for company repos.
+Customize by editing `~/.claude/scripts/global-guard.py` — add directory blocks, file extension rules, or stricter rules for company repos.
 
 ## Rules System
 
-Rules in `rules/` are loaded every session. They constrain Claude's behavior:
+Rules in `~/.claude/rules/` are loaded every session, from every project. They constrain Claude's behavior:
 
 | Rule | What It Does |
 |---|---|
@@ -156,7 +189,7 @@ Rules in `rules/` are loaded every session. They constrain Claude's behavior:
 
 ## Agent Definitions
 
-The `agents/` directory contains pre-built agent definitions for common development tasks. These work with Claude Code's Agent tool for delegating work to subagents.
+The `agents/` directory in the workspace contains pre-built agent definitions for common development tasks. These work with Claude Code's Agent tool for delegating work to subagents.
 
 | Agent | Purpose | Writes Code? |
 |---|---|---|
@@ -193,17 +226,19 @@ The `knowledge/` directory is your assistant's brain. Commit and push it regular
 
 ## Customization
 
+**Workspace location:** Set during `setup.sh`. Stored in `~/.claude/workspace.conf`. Default: `~/claude-assistant`.
+
 **Project-specific rules:** Create `.claude/rules/my-rule.md` in any project directory. Loads only for that project.
 
 **Deny rules:** Edit `~/.claude/settings.json` -> `permissions.deny` to block specific tools or commands globally.
 
-**Session reminder timing:** Edit `scripts/session-save-reminder.sh` — change `600` (seconds) to adjust the threshold.
+**Session reminder timing:** Edit `~/.claude/scripts/session-save-reminder.sh` — change `600` (seconds) to adjust the threshold.
 
-**Compaction prompt:** Edit the PreCompact prompt hook in `settings.json` to customize what Claude preserves during context compression.
+**Compaction prompt:** Edit the PreCompact prompt hook in `~/.claude/settings.json` to customize what Claude preserves during context compression.
 
-**Development standards:** Edit `rules/development.md` to add your language-specific conventions, preferred linters, or stricter limits.
+**Development standards:** Edit `~/.claude/rules/development.md` to add your language-specific conventions, preferred linters, or stricter limits.
 
-**Company repo protection:** Edit `rules/security.md` to add company-specific blocks (read-only repos, no autonomous push, etc.).
+**Company repo protection:** Edit `~/.claude/rules/security.md` to add company-specific blocks (read-only repos, no autonomous push, etc.).
 
 ## Credits
 

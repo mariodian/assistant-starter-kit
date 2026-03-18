@@ -5,7 +5,7 @@
 # This hook fires on SessionStart:compact and re-outputs key behavioral rules
 # as system-reminder content that survives compaction.
 
-CLAUDE_DIR="$HOME/.claude"
+WORKSPACE=$(cat "$HOME/.claude/workspace.conf" 2>/dev/null || echo "$HOME/claude-assistant")
 
 echo "=== CRITICAL RULES (re-injected after compaction) ==="
 echo ""
@@ -14,10 +14,11 @@ echo "GIT: Commit and push before new features. Stage specific files, never git 
 echo "TASKS: Check active tasks before substantive work. Never claim done without verification."
 echo "COMMUNICATION: No hype, no flattery. Specific praise only. Lead with problems."
 echo "SESSIONS: Update MEMORY.md and create session note before exit."
+echo "WORKSPACE: Your assistant workspace is $WORKSPACE. All knowledge, tasks, and state live there."
 echo ""
 
 # Also output the pre-compact state if available
-if [ -f "$CLAUDE_DIR/state/pre-compact-state.md" ]; then
+if [ -f "$WORKSPACE/state/pre-compact-state.md" ]; then
     echo "=== PRE-COMPACTION STATE ==="
-    cat "$CLAUDE_DIR/state/pre-compact-state.md"
+    cat "$WORKSPACE/state/pre-compact-state.md"
 fi

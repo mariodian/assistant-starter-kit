@@ -2,7 +2,8 @@
 set -euo pipefail
 
 # Claude Code Starter Kit — Setup Script
-# Checks/installs dependencies, copies template files to ~/.claude/, personalizes them.
+# Phase 1: Install minimal config to ~/.claude/ (rules, hooks, guard)
+# Phase 2: Bootstrap ~/claude-assistant/ workspace (knowledge, skills, tasks, agents)
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 CLAUDE_DIR="$HOME/.claude"
@@ -146,18 +147,7 @@ echo "All dependencies OK."
 echo ""
 
 # -----------------------------------------------
-# Step 3: Check for existing config
-# -----------------------------------------------
-
-if [[ -f "$CLAUDE_DIR/settings.json" ]]; then
-    echo "Warning: ~/.claude/settings.json already exists."
-    read -p "Overwrite? This will replace your current config. (y/N) " -n 1 -r
-    echo
-    [[ $REPLY =~ ^[Yy]$ ]] || { echo "Aborted."; exit 0; }
-fi
-
-# -----------------------------------------------
-# Step 4: Personalize
+# Step 3: Personalize
 # -----------------------------------------------
 
 echo "Let's personalize your assistant."
@@ -170,23 +160,51 @@ if [[ -z "$USER_NAME" || ${#USER_NAME} -lt 2 ]]; then
     exit 1
 fi
 
+# --- Workspace directory ---
 echo ""
-echo "Setting up ~/.claude/ ..."
+read -p "Workspace directory [~/claude-assistant]: " WORKSPACE_INPUT
+WORKSPACE_NAME="${WORKSPACE_INPUT:-claude-assistant}"
+# Strip leading ~/
+WORKSPACE_NAME="${WORKSPACE_NAME#\~/}"
+WORKSPACE_DIR="$HOME/$WORKSPACE_NAME"
+
+echo ""
 
 # -----------------------------------------------
-# Step 5: Copy files
+# Step 4: Check for existing config
 # -----------------------------------------------
+
+if [[ -f "$CLAUDE_DIR/settings.json" ]]; then
+    echo "Warning: ~/.claude/settings.json already exists."
+    read -p "Overwrite? This will replace your current config. (y/N) " -n 1 -r
+    echo
+    [[ $REPLY =~ ^[Yy]$ ]] || { echo "Aborted."; exit 0; }
+fi
+
+if [[ -d "$WORKSPACE_DIR" ]]; then
+    echo "Warning: $WORKSPACE_DIR already exists."
+    read -p "Overwrite? This will replace your workspace files. (y/N) " -n 1 -r
+    echo
+    [[ $REPLY =~ ^[Yy]$ ]] || { echo "Aborted."; exit 0; }
+fi
+
+echo "Setting up..."
+echo ""
+
+# ===============================================
+# PHASE 1: Install minimal config to ~/.claude/
+# ===============================================
+
+echo "Phase 1: Installing global config to ~/.claude/ ..."
 
 # Create directory structure
-mkdir -p "$CLAUDE_DIR"/{rules,scripts,agents,knowledge/self,knowledge/user,knowledge/problems,knowledge/projects,skills/onboard,skills/tasks,skills/plan-and-implement,skills/reflect,skills/bootstrap,skills/create-skill/scripts,state/sessions}
+mkdir -p "$CLAUDE_DIR"/{rules,scripts,state}
 
-# --- Copy scripts ---
+# --- Copy scripts (hook scripts only) ---
 cp "$SCRIPT_DIR/scripts/global-guard.py" "$CLAUDE_DIR/scripts/"
 cp "$SCRIPT_DIR/scripts/pre-compact.sh" "$CLAUDE_DIR/scripts/"
 cp "$SCRIPT_DIR/scripts/session-save-reminder.sh" "$CLAUDE_DIR/scripts/"
 cp "$SCRIPT_DIR/scripts/post-compact-reinject.sh" "$CLAUDE_DIR/scripts/"
-cp "$SCRIPT_DIR/scripts/db.py" "$CLAUDE_DIR/scripts/"
-cp "$SCRIPT_DIR/scripts/extract-learnings.py" "$CLAUDE_DIR/scripts/"
 chmod +x "$CLAUDE_DIR/scripts/"*.sh "$CLAUDE_DIR/scripts/"*.py
 
 # --- Copy rules ---
@@ -194,48 +212,95 @@ for rule in "$SCRIPT_DIR"/rules/*.md; do
     cp "$rule" "$CLAUDE_DIR/rules/"
 done
 
-# --- Copy agents ---
-for agent in "$SCRIPT_DIR"/agents/*.md; do
-    cp "$agent" "$CLAUDE_DIR/agents/"
-done
-
-# --- Copy skills ---
-cp "$SCRIPT_DIR/skills/onboard/SKILL.md" "$CLAUDE_DIR/skills/onboard/"
-cp "$SCRIPT_DIR/skills/tasks/SKILL.md" "$CLAUDE_DIR/skills/tasks/"
-cp "$SCRIPT_DIR/skills/tasks/LEARNINGS.md" "$CLAUDE_DIR/skills/tasks/"
-cp "$SCRIPT_DIR/skills/plan-and-implement/SKILL.md" "$CLAUDE_DIR/skills/plan-and-implement/"
-cp "$SCRIPT_DIR/skills/plan-and-implement/LEARNINGS.md" "$CLAUDE_DIR/skills/plan-and-implement/"
-cp "$SCRIPT_DIR/skills/reflect/SKILL.md" "$CLAUDE_DIR/skills/reflect/"
-cp "$SCRIPT_DIR/skills/reflect/LEARNINGS.md" "$CLAUDE_DIR/skills/reflect/"
-cp "$SCRIPT_DIR/skills/bootstrap/SKILL.md" "$CLAUDE_DIR/skills/bootstrap/"
-cp "$SCRIPT_DIR/skills/bootstrap/LEARNINGS.md" "$CLAUDE_DIR/skills/bootstrap/"
-cp "$SCRIPT_DIR/skills/create-skill/SKILL.md" "$CLAUDE_DIR/skills/create-skill/"
-cp "$SCRIPT_DIR/skills/create-skill/LEARNINGS.md" "$CLAUDE_DIR/skills/create-skill/"
-cp "$SCRIPT_DIR/skills/create-skill/scripts/init_skill.py" "$CLAUDE_DIR/skills/create-skill/scripts/"
-cp "$SCRIPT_DIR/skills/create-skill/scripts/validate_skill.py" "$CLAUDE_DIR/skills/create-skill/scripts/"
-chmod +x "$CLAUDE_DIR/skills/create-skill/scripts/"*.py
-
-# --- Copy statusline ---
-cp "$SCRIPT_DIR/statusline.sh" "$CLAUDE_DIR/"
-chmod +x "$CLAUDE_DIR/statusline.sh"
-
 # --- Copy settings.json ---
 cp "$SCRIPT_DIR/templates/settings.json" "$CLAUDE_DIR/settings.json"
 
 # --- Copy .gitignore ---
 cp "$SCRIPT_DIR/templates/gitignore" "$CLAUDE_DIR/.gitignore"
 
-# --- Generate CLAUDE.md from template ---
+# --- Copy statusline ---
+cp "$SCRIPT_DIR/statusline.sh" "$CLAUDE_DIR/"
+chmod +x "$CLAUDE_DIR/statusline.sh"
+
+# --- Generate global CLAUDE.md ---
 sed -e "s/{{USER_NAME}}/$USER_NAME/g" \
     -e "s|{{USER_BIO}}|$USER_BIO|g" \
-    "$SCRIPT_DIR/templates/CLAUDE.md" > "$CLAUDE_DIR/CLAUDE.md"
+    "$SCRIPT_DIR/templates/global-CLAUDE.md" > "$CLAUDE_DIR/CLAUDE.md"
+
+# --- Write workspace.conf ---
+echo "$WORKSPACE_DIR" > "$CLAUDE_DIR/workspace.conf"
+
+# --- Substitute workspace path in rules (replace ~/claude-assistant with actual) ---
+if [[ "$WORKSPACE_NAME" != "claude-assistant" ]]; then
+    for f in "$CLAUDE_DIR/rules/"*.md; do
+        sed -i '' "s|~/claude-assistant/|~/$WORKSPACE_NAME/|g" "$f" 2>/dev/null || \
+        sed -i "s|~/claude-assistant/|~/$WORKSPACE_NAME/|g" "$f"
+    done
+    # Also update global CLAUDE.md
+    sed -i '' "s|~/claude-assistant/|~/$WORKSPACE_NAME/|g" "$CLAUDE_DIR/CLAUDE.md" 2>/dev/null || \
+    sed -i "s|~/claude-assistant/|~/$WORKSPACE_NAME/|g" "$CLAUDE_DIR/CLAUDE.md"
+fi
+
+echo "  Global config installed."
+echo ""
+
+# ===============================================
+# PHASE 2: Bootstrap workspace
+# ===============================================
+
+echo "Phase 2: Bootstrapping workspace at $WORKSPACE_DIR ..."
+
+# Create directory structure
+mkdir -p "$WORKSPACE_DIR"/{.claude/skills/onboard,.claude/skills/tasks,.claude/skills/plan-and-implement,.claude/skills/reflect,.claude/skills/bootstrap,.claude/skills/create-skill/scripts,knowledge/self,knowledge/user,knowledge/problems,knowledge/projects,agents,scripts,state/sessions}
+
+# --- Generate workspace CLAUDE.md ---
+sed -e "s/{{USER_NAME}}/$USER_NAME/g" \
+    -e "s|{{USER_BIO}}|$USER_BIO|g" \
+    "$SCRIPT_DIR/templates/workspace-CLAUDE.md" > "$WORKSPACE_DIR/.claude/CLAUDE.md"
+
+# --- Copy agents ---
+for agent in "$SCRIPT_DIR"/agents/*.md; do
+    cp "$agent" "$WORKSPACE_DIR/agents/"
+done
+
+# --- Copy workspace scripts ---
+cp "$SCRIPT_DIR/scripts/db.py" "$WORKSPACE_DIR/scripts/"
+cp "$SCRIPT_DIR/scripts/extract-learnings.py" "$WORKSPACE_DIR/scripts/"
+chmod +x "$WORKSPACE_DIR/scripts/"*.py
+
+# --- Copy skills ---
+cp "$SCRIPT_DIR/skills/onboard/SKILL.md" "$WORKSPACE_DIR/.claude/skills/onboard/"
+cp "$SCRIPT_DIR/skills/tasks/SKILL.md" "$WORKSPACE_DIR/.claude/skills/tasks/"
+cp "$SCRIPT_DIR/skills/tasks/LEARNINGS.md" "$WORKSPACE_DIR/.claude/skills/tasks/"
+cp "$SCRIPT_DIR/skills/plan-and-implement/SKILL.md" "$WORKSPACE_DIR/.claude/skills/plan-and-implement/"
+cp "$SCRIPT_DIR/skills/plan-and-implement/LEARNINGS.md" "$WORKSPACE_DIR/.claude/skills/plan-and-implement/"
+cp "$SCRIPT_DIR/skills/reflect/SKILL.md" "$WORKSPACE_DIR/.claude/skills/reflect/"
+cp "$SCRIPT_DIR/skills/reflect/LEARNINGS.md" "$WORKSPACE_DIR/.claude/skills/reflect/"
+cp "$SCRIPT_DIR/skills/bootstrap/SKILL.md" "$WORKSPACE_DIR/.claude/skills/bootstrap/"
+cp "$SCRIPT_DIR/skills/bootstrap/LEARNINGS.md" "$WORKSPACE_DIR/.claude/skills/bootstrap/"
+cp "$SCRIPT_DIR/skills/create-skill/SKILL.md" "$WORKSPACE_DIR/.claude/skills/create-skill/"
+cp "$SCRIPT_DIR/skills/create-skill/LEARNINGS.md" "$WORKSPACE_DIR/.claude/skills/create-skill/"
+cp "$SCRIPT_DIR/skills/create-skill/scripts/init_skill.py" "$WORKSPACE_DIR/.claude/skills/create-skill/scripts/"
+cp "$SCRIPT_DIR/skills/create-skill/scripts/validate_skill.py" "$WORKSPACE_DIR/.claude/skills/create-skill/scripts/"
+chmod +x "$WORKSPACE_DIR/.claude/skills/create-skill/scripts/"*.py
+
+# --- Copy workspace .gitignore ---
+cp "$SCRIPT_DIR/templates/workspace-gitignore" "$WORKSPACE_DIR/.gitignore"
+
+# --- Substitute workspace path in skills (if non-default) ---
+if [[ "$WORKSPACE_NAME" != "claude-assistant" ]]; then
+    find "$WORKSPACE_DIR/.claude/skills" -name "SKILL.md" -exec \
+        sed -i '' "s|~/claude-assistant/|~/$WORKSPACE_NAME/|g" {} \; 2>/dev/null || \
+    find "$WORKSPACE_DIR/.claude/skills" -name "SKILL.md" -exec \
+        sed -i "s|~/claude-assistant/|~/$WORKSPACE_NAME/|g" {} \;
+fi
 
 # --- Initialize task database and export backlog ---
-python3 "$CLAUDE_DIR/scripts/db.py" init
-python3 "$CLAUDE_DIR/scripts/db.py" export
+python3 "$WORKSPACE_DIR/scripts/db.py" init
+python3 "$WORKSPACE_DIR/scripts/db.py" export
 
 # --- Create starter MEMORY.md ---
-cat > "$CLAUDE_DIR/MEMORY.md" << 'MEMEOF'
+cat > "$WORKSPACE_DIR/MEMORY.md" << 'MEMEOF'
 # Auto-Memory
 
 ## Active Tasks
@@ -260,22 +325,38 @@ cat > "$CLAUDE_DIR/MEMORY.md" << 'MEMEOF'
 | `knowledge/self/identity.md` | AI self-knowledge (created by /onboard) |
 MEMEOF
 
+echo "  Workspace created."
+echo ""
+
 # -----------------------------------------------
-# Step 6: Initialize git repo
+# Step 5: Initialize git repos
 # -----------------------------------------------
 
+# --- Global ~/.claude/ git ---
 if [[ ! -d "$CLAUDE_DIR/.git" ]]; then
     cd "$CLAUDE_DIR"
     git init
     git add \
-        CLAUDE.md MEMORY.md settings.json statusline.sh .gitignore \
-        rules/ agents/ scripts/ skills/ state/backlog.md \
-        knowledge/
+        CLAUDE.md settings.json statusline.sh .gitignore workspace.conf \
+        rules/ scripts/
     git commit -m "initial setup from claude-starter-kit"
     echo ""
     echo "Git repo initialized at ~/.claude/"
-    echo "To back up your config, create a private repo and run:"
-    echo "  cd ~/.claude && git remote add origin git@github.com:YOUR_USERNAME/claude-config.git && git push -u origin main"
+fi
+
+# --- Workspace git ---
+if [[ ! -d "$WORKSPACE_DIR/.git" ]]; then
+    cd "$WORKSPACE_DIR"
+    git init
+    git add \
+        .claude/ .gitignore MEMORY.md \
+        agents/ scripts/ state/backlog.md \
+        knowledge/
+    git commit -m "initial setup from claude-starter-kit"
+    echo ""
+    echo "Git repo initialized at $WORKSPACE_DIR"
+    echo "To back up your workspace, create a private repo and run:"
+    echo "  cd $WORKSPACE_DIR && git remote add origin git@github.com:YOUR_USERNAME/claude-assistant.git && git push -u origin main"
 fi
 
 # -----------------------------------------------
@@ -285,26 +366,25 @@ fi
 echo ""
 echo "=== Setup complete ==="
 echo ""
-echo "Files installed:"
-echo "  ~/.claude/CLAUDE.md          — global instructions"
-echo "  ~/.claude/MEMORY.md          — cross-session index (first 200 lines auto-loaded)"
-echo "  ~/.claude/settings.json      — hooks + security"
-echo "  ~/.claude/rules/             — communication, security, sessions, tasks, delegation, development, research"
-echo "  ~/.claude/agents/            — code-reviewer, bug-fixer, implementer, researcher"
-echo "  ~/.claude/scripts/           — security guard, pre-compact, reminders, db, learning extractor"
-echo "  ~/.claude/skills/onboard/    — guided first-session setup"
-echo "  ~/.claude/skills/tasks/      — task management (/tasks)"
-echo "  ~/.claude/skills/plan-and-implement/ — structured build workflow (/plan)"
-echo "  ~/.claude/skills/reflect/    — session learning extraction (/reflect)"
-echo "  ~/.claude/skills/bootstrap/  — project setup (/bootstrap)"
-echo "  ~/.claude/skills/create-skill/ — skill builder (/create-skill)"
-echo "  ~/.claude/tasks.db           — SQLite task store"
-echo "  ~/.claude/knowledge/         — your assistant's growing brain"
-echo "  ~/.claude/statusline.sh      — context/cost display"
+echo "Global config (~/.claude/):"
+echo "  CLAUDE.md          — global instructions (points to workspace)"
+echo "  settings.json      — hooks + security"
+echo "  rules/             — communication, security, sessions, tasks, delegation, development, research"
+echo "  scripts/           — security guard, pre-compact, post-compact, session reminder"
+echo "  statusline.sh      — context/cost display"
+echo ""
+echo "Workspace ($WORKSPACE_DIR):"
+echo "  .claude/CLAUDE.md  — workspace instructions"
+echo "  .claude/skills/    — onboard, tasks, plan, reflect, bootstrap, create-skill"
+echo "  knowledge/         — your assistant's growing brain"
+echo "  agents/            — code-reviewer, bug-fixer, implementer, researcher"
+echo "  scripts/           — task database, learning extractor"
+echo "  state/             — sessions, backlog"
+echo "  MEMORY.md          — cross-session index"
 echo ""
 echo "=== Next: Start your first session ==="
 echo ""
-echo "  cd ~/.claude"
+echo "  cd ~/$WORKSPACE_NAME"
 echo "  claude"
 echo ""
 echo "Then type:"

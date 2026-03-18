@@ -16,14 +16,14 @@ You are guiding a new user through setting up their personal AI assistant. This 
 ## Before Starting
 
 1. Read `~/.claude/CLAUDE.md` and all files in `~/.claude/rules/`
-2. Read all files in `~/.claude/knowledge/` (if any exist)
-3. Check if `~/.claude/state/onboard-progress.yaml` exists — if so, resume (see Resuming below)
+2. Read all files in `knowledge/` (if any exist)
+3. Check if `state/onboard-progress.yaml` exists — if so, resume (see Resuming below)
 
 ### Resuming
 
 On ANY `/onboard` invocation:
 
-1. Check if `~/.claude/state/onboard-progress.yaml` exists
+1. Check if `state/onboard-progress.yaml` exists
 2. If yes:
    - Read `step_completed` to know where they left off
    - Read all files listed in `files_written` to rebuild context
@@ -36,7 +36,7 @@ On ANY `/onboard` invocation:
 
 After completing EACH step, immediately:
 
-1. Write/update `~/.claude/state/onboard-progress.yaml`:
+1. Write/update `state/onboard-progress.yaml`:
    ```yaml
    step_completed: N
    timestamp: YYYY-MM-DDTHH:MM
@@ -44,7 +44,7 @@ After completing EACH step, immediately:
      - knowledge/user/profile.md
      # ... list all files written so far
    ```
-2. Commit locally: `cd ~/.claude && git add -A && git commit -m "onboard: checkpoint after step N"`
+2. Commit locally: `git add -A && git commit -m "onboard: checkpoint after step N"`
 
 Do NOT batch commits to the end. Each step is a checkpoint. If the user disconnects, their progress is on disk.
 
@@ -62,7 +62,7 @@ Greet the user by name (from CLAUDE.md). Explain what you're about to do:
 
 ## Step 1: User Profile (5 min)
 
-**Goal:** Create `~/.claude/knowledge/user/profile.md`
+**Goal:** Create `knowledge/user/profile.md`
 
 Have a conversation. Ask one question at a time, wait for the answer. Don't dump a list of questions.
 
@@ -92,7 +92,7 @@ Show them the file and ask: "Anything wrong or missing?"
 
 ## Step 2: 12 Favorite Problems (10 min)
 
-**Goal:** Create `~/.claude/knowledge/problems/00-overview.md` and individual problem files.
+**Goal:** Create `knowledge/problems/00-overview.md` and individual problem files.
 
 Introduce the concept:
 
@@ -134,7 +134,7 @@ Show the overview and ask: "Do these feel right? Any that don't belong, or any m
 
 ## Step 3: End Goal and Subgoals (5 min)
 
-**Goal:** Create `~/.claude/knowledge/user/goals.md`
+**Goal:** Create `knowledge/user/goals.md`
 
 Ask:
 
@@ -166,14 +166,14 @@ First, insert the goals into the database:
 ```bash
 # Insert end goal
 python3 -c "
-import sys; sys.path.insert(0,'$HOME/.claude/scripts')
+import sys; sys.path.insert(0,'scripts')
 from db import add_goal
 add_goal('G0', '[END_GOAL_NAME]', 'end_goal', description='[END_GOAL_DESCRIPTION]')
 "
 
 # Insert each subgoal
 python3 -c "
-import sys; sys.path.insert(0,'$HOME/.claude/scripts')
+import sys; sys.path.insert(0,'scripts')
 from db import add_goal
 add_goal('S1', '[NAME]', 'subgoal', parent_id='G0', done_when='[CRITERIA]', problems='[1,2]', order_num=1)
 "
@@ -193,7 +193,7 @@ Insert each task into the database:
 
 ```bash
 python3 -c "
-import sys; sys.path.insert(0,'$HOME/.claude/scripts')
+import sys; sys.path.insert(0,'scripts')
 from db import next_task_id, add_task
 tid = next_task_id()
 add_task(tid, '[TASK_NAME]', 'P1', problems='1,4', effort='S', subgoal='S1')
@@ -204,7 +204,7 @@ print(f'Created {tid}')
 After all tasks are inserted, export to markdown:
 
 ```bash
-python3 ~/.claude/scripts/db.py export
+python3 scripts/db.py export
 ```
 
 Update MEMORY.md with an Active Tasks table showing the top tasks.
@@ -213,7 +213,7 @@ Update MEMORY.md with an Active Tasks table showing the top tasks.
 
 ## Step 5: AI Self-Knowledge (2 min)
 
-**Goal:** Create `~/.claude/knowledge/self/identity.md`
+**Goal:** Create `knowledge/self/identity.md`
 
 Create a brief self-knowledge file. This tells future Claude instances what they are in this user's system:
 
@@ -224,9 +224,9 @@ I am [USER_NAME]'s AI assistant, running on Claude Code. I have no memory betwee
 everything I know persists through files on disk.
 
 ## What I Have
-- Persistent knowledge in ~/.claude/knowledge/
+- Persistent knowledge in ~/claude-assistant/knowledge/
 - Rules that shape my behavior in ~/.claude/rules/
-- Session history in knowledge/sessions/
+- Session history in state/sessions/
 - A cross-session index in MEMORY.md (first 200 lines auto-loaded)
 
 ## How I Improve
@@ -247,24 +247,24 @@ Adapt the tone to match the user's communication style observed in Steps 1-4.
 
 1. **Final commit:**
    ```bash
-   cd ~/.claude && git add -A && git commit -m "onboarding: complete"
+   git add -A && git commit -m "onboarding: complete"
    ```
 
 2. **Delete progress file:**
    ```bash
-   rm ~/.claude/state/onboard-progress.yaml && cd ~/.claude && git add -A && git commit -m "onboard: cleanup progress file"
+   rm state/onboard-progress.yaml && git add -A && git commit -m "onboard: cleanup progress file"
    ```
 
 3. **Set up remote backup (optional but recommended):**
    ```bash
-   gh repo create claude-config --private --source ~/.claude --push
+   gh repo create claude-assistant --private --source . --push
    ```
    This creates a private GitHub repo and pushes everything in one command. Requires `gh` CLI (`brew install gh && gh auth login`).
 
    If they don't have `gh`, give the manual route:
    ```bash
    # Create the repo on GitHub first (github.com/new), then:
-   cd ~/.claude && git remote add origin git@github.com:USERNAME/claude-config.git && git push -u origin main
+   git remote add origin git@github.com:USERNAME/claude-assistant.git && git push -u origin main
    ```
 
 4. **Update MEMORY.md** with:
