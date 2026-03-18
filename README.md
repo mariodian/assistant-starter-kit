@@ -32,8 +32,8 @@ This is different from the `@import` syntax in `CLAUDE.md`, which loads files in
 | `/reflect` | Extracts corrections and preferences from sessions, routes them to the right files |
 | `/bootstrap` | Sets up any project's `.claude/` for agentic development (CLAUDE.md, CODEBASE.md, docs/) |
 | `/create-skill` | Scaffolds new skills with validation — extend the system with your own workflows |
-| Security guard | Blocks secrets access, force-push, writes outside `$HOME`, `rm -rf` |
-| Session persistence | Pre-compact hook saves state before context compression. Session reminders after 10 min |
+| Security guard | Blocks secrets access, force-push, writes outside `$HOME`, `rm -rf`. Audit log at `state/guard-log.jsonl` |
+| Session persistence | Pre-compact hook saves state, post-compact hook re-injects critical rules. Session reminders after 10 min |
 | Delegation rules | Subagent orchestration: authority boundaries, knowledge flow, quality control |
 | Agent definitions | 4 pre-built agents: code-reviewer, bug-fixer, implementer, researcher |
 | Development standards | Code quality limits, testing philosophy, commit conventions |
@@ -85,6 +85,7 @@ Type `/onboard` — Claude walks you through defining your profile, problems, go
 │   ├── db.py                  # SQLite task database
 │   ├── extract-learnings.py   # Session JSONL parser for /reflect
 │   ├── pre-compact.sh         # Saves state before context compression
+│   ├── post-compact-reinject.sh # Re-injects critical rules after compaction
 │   └── session-save-reminder.sh
 ├── skills/
 │   ├── onboard/SKILL.md       # Guided first-session setup
@@ -131,7 +132,13 @@ The guard script (`scripts/global-guard.py`) hooks into Claude Code's `PreToolUs
 
 **How it works:** The guard is configured in `settings.json` as a `PreToolUse` hook. Claude Code sends the tool name and input as JSON to stdin. The script checks against its rules and returns `{"allow": true}` or `{"blocked": true, "reason": "..."}`. Claude sees the reason and adjusts.
 
-Customize by editing `scripts/global-guard.py` — add directory blocks, file extension rules, or audit logging.
+Every blocked action is logged to `state/guard-log.jsonl` with timestamp, tool name, reason, and context. Review with:
+
+```bash
+cat ~/.claude/state/guard-log.jsonl | python3 -m json.tool
+```
+
+Customize by editing `scripts/global-guard.py` — add directory blocks, file extension rules, or stricter rules for company repos.
 
 ## Rules System
 

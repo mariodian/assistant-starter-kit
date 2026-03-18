@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.0] - 2026-03-18
+
+### Added
+
+- **Guard audit logging** — Every blocked tool call is now logged to `state/guard-log.jsonl` with timestamp, tool name, reason, and context (first 200 chars). Community request: "audit trail of blocked tool calls — that's intelligence lost." Review with `cat ~/.claude/state/guard-log.jsonl | python3 -m json.tool`.
+- **Post-compaction rule re-injection** — New `post-compact-reinject.sh` script fires on `SessionStart:compact` and re-outputs critical rules (security, git, tasks, communication, sessions) as system-reminder content. Addresses the CLAUDE.md fading problem documented in GitHub issues #22309, #21119, #7777. A prompt hook also tells Claude to continue the in-progress task.
+
+### Changed
+
+- `global-guard.py` — `block()` now calls `log_block()` before exiting. Context parameter added to all block calls for richer audit trail.
+- `settings.json` — `SessionStart:compact` hook now runs `post-compact-reinject.sh` instead of plain `cat`, plus adds a prompt hook for task continuity.
+- `setup.sh` — Copies `post-compact-reinject.sh` to `~/.claude/scripts/`.
+
+### Files
+
+- 1 new: `scripts/post-compact-reinject.sh`
+- Modified: `scripts/global-guard.py`, `templates/settings.json`, `setup.sh`, `README.md`, `CHANGELOG.md`
+
 ## [2.0.0] - 2026-03-18
 
 ### Added
@@ -98,7 +116,8 @@ First stable release.
 - 5 scripts: global-guard.py, db.py, extract-learnings.py, pre-compact.sh, session-save-reminder.sh
 - 3 templates: CLAUDE.md, settings.json, gitignore
 
-[2.0.0]: https://github.com/mp-web3/claude-starter-kit/releases/tag/v2.0.0
+[2.1.0]: https://github.com/mp-web3/claude-starter-kit/compare/v2.0.0...v2.1.0
+[2.0.0]: https://github.com/mp-web3/claude-starter-kit/compare/v1.1.1...v2.0.0
 [1.1.1]: https://github.com/mp-web3/claude-starter-kit/releases/tag/v1.1.1
 [1.1.0]: https://github.com/mp-web3/claude-starter-kit/releases/tag/v1.1.0
 [1.0.0]: https://github.com/mp-web3/claude-starter-kit/releases/tag/v1.0.0

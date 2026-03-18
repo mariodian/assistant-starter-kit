@@ -184,6 +184,7 @@ mkdir -p "$CLAUDE_DIR"/{rules,scripts,agents,knowledge/self,knowledge/user,knowl
 cp "$SCRIPT_DIR/scripts/global-guard.py" "$CLAUDE_DIR/scripts/"
 cp "$SCRIPT_DIR/scripts/pre-compact.sh" "$CLAUDE_DIR/scripts/"
 cp "$SCRIPT_DIR/scripts/session-save-reminder.sh" "$CLAUDE_DIR/scripts/"
+cp "$SCRIPT_DIR/scripts/post-compact-reinject.sh" "$CLAUDE_DIR/scripts/"
 cp "$SCRIPT_DIR/scripts/db.py" "$CLAUDE_DIR/scripts/"
 cp "$SCRIPT_DIR/scripts/extract-learnings.py" "$CLAUDE_DIR/scripts/"
 chmod +x "$CLAUDE_DIR/scripts/"*.sh "$CLAUDE_DIR/scripts/"*.py

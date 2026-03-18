@@ -114,8 +114,12 @@
         "hooks": [
           {
             "type": "command",
-            "command": "cat $HOME/.claude/state/pre-compact-state.md 2>/dev/null || echo 'No pre-compaction state found.'",
+            "command": "$HOME/.claude/scripts/post-compact-reinject.sh",
             "timeout": 5
+          },
+          {
+            "type": "prompt",
+            "prompt": "Context was just compacted. Critical rules have been re-injected above. Re-read them now. Continue with the task that was in progress before compaction."
           }
         ]
       }

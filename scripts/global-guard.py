@@ -13,6 +13,7 @@ import os
 import re
 import shlex
 import sys
+from datetime import datetime, timezone
 from pathlib import Path
 
 HOME_DIR = str(Path.home())
@@ -33,7 +34,28 @@ DESTRUCTIVE_CMDS = {"rm", "rmdir", "mv", "cp", "touch", "mkdir", "chmod", "chown
 SHELL_OP_RE = re.compile(r"\s*(?:&&|\|\||[;|])\s*")
 
 
-def block(tool: str, reason: str) -> None:
+GUARD_LOG = Path.home() / ".claude" / "state" / "guard-log.jsonl"
+
+
+def log_block(tool: str, reason: str, context: str = "") -> None:
+    """Append blocked tool call to audit log."""
+    try:
+        entry = {
+            "ts": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "tool": tool,
+            "reason": reason,
+        }
+        if context:
+            entry["context"] = context[:200]
+        GUARD_LOG.parent.mkdir(parents=True, exist_ok=True)
+        with open(GUARD_LOG, "a") as f:
+            f.write(json.dumps(entry) + "\n")
+    except OSError:
+        pass  # Don't fail the guard if logging fails
+
+
+def block(tool: str, reason: str, context: str = "") -> None:
+    log_block(tool, reason, context)
     print(reason, file=sys.stderr)
     sys.exit(2)
 
@@ -64,16 +86,16 @@ def looks_like_path(token: str) -> bool:
 
 def check_bash(tool: str, cmd: str) -> None:
     if re.search(r"git\s+push\s+.*(-f\b|--force\b)", cmd):
-        block(tool, "SECURITY: Force-push is blocked")
+        block(tool, "SECURITY: Force-push is blocked", cmd)
 
     if re.search(r"git\s+add\s", cmd):
         if re.search(r"\.(env|key|pem|secret|keystore)\b|\.env\.", cmd, re.IGNORECASE):
-            block(tool, "SECURITY: Cannot stage secrets files")
+            block(tool, "SECURITY: Cannot stage secrets files", cmd)
 
     for m in re.finditer(r">{1,2}\s*(/[^\s;|&>]+)", cmd):
         target = m.group(1)
         if target != "/dev/null" and not inside(target, WRITABLE_ROOTS):
-            block(tool, f"BOUNDARY: Redirect targets outside allowed directories: {cmd}")
+            block(tool, f"BOUNDARY: Redirect targets outside allowed directories", cmd)
 
     for subcmd in SHELL_OP_RE.split(cmd):
         subcmd = subcmd.strip()
@@ -100,9 +122,9 @@ def check_bash(tool: str, cmd: str) -> None:
                     continue
                 if looks_like_path(arg):
                     if not inside(arg, READABLE_ROOTS):
-                        block(tool, f"BOUNDARY: Shell read targets outside allowed directories: {cmd}")
+                        block(tool, f"BOUNDARY: Shell read targets outside allowed directories", cmd)
                     if is_secrets(arg):
-                        block(tool, "SECURITY: Cannot read secrets files via shell commands")
+                        block(tool, "SECURITY: Cannot read secrets files via shell commands", cmd)
 
         if command in DESTRUCTIVE_CMDS:
             for arg in args:
@@ -110,7 +132,7 @@ def check_bash(tool: str, cmd: str) -> None:
                     continue
                 if looks_like_path(arg):
                     if not inside(arg, WRITABLE_ROOTS):
-                        block(tool, f"BOUNDARY: Destructive command targets outside allowed directories: {cmd}")
+                        block(tool, f"BOUNDARY: Destructive command targets outside allowed directories", cmd)
 
         if command == "tee":
             for arg in args:
@@ -118,7 +140,7 @@ def check_bash(tool: str, cmd: str) -> None:
                     continue
                 if looks_like_path(arg):
                     if not inside(arg, WRITABLE_ROOTS):
-                        block(tool, f"BOUNDARY: tee targets outside allowed directories: {cmd}")
+                        block(tool, f"BOUNDARY: tee targets outside allowed directories", cmd)
 
 
 def main() -> None:
@@ -137,25 +159,25 @@ def main() -> None:
     if tool in ("Grep", "Glob"):
         p = inp.get("path", "")
         if p and not inside(p, READABLE_ROOTS):
-            block(tool, f"BOUNDARY: Search outside allowed directories: {p}")
+            block(tool, f"BOUNDARY: Search outside allowed directories", p)
         sys.exit(0)
 
     if tool == "Read":
         p = inp.get("file_path", "")
         if p:
             if not inside(p, READABLE_ROOTS):
-                block(tool, f"BOUNDARY: Read outside allowed directories: {p}")
+                block(tool, f"BOUNDARY: Read outside allowed directories", p)
             if is_secrets(p):
-                block(tool, f"SECURITY: Cannot read secrets file: {os.path.basename(p)}")
+                block(tool, f"SECURITY: Cannot read secrets file: {os.path.basename(p)}", p)
         sys.exit(0)
 
     if tool in ("Write", "Edit"):
         p = inp.get("file_path", "")
         if p:
             if not inside(p, WRITABLE_ROOTS):
-                block(tool, f"BOUNDARY: Write outside allowed directories: {p}")
+                block(tool, f"BOUNDARY: Write outside allowed directories", p)
             if is_secrets(p):
-                block(tool, f"SECURITY: Cannot write secrets file: {os.path.basename(p)}")
+                block(tool, f"SECURITY: Cannot write secrets file: {os.path.basename(p)}", p)
         sys.exit(0)
 
     if tool == "Bash":
