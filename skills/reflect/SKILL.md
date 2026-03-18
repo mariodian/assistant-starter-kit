@@ -25,8 +25,8 @@ python3 ~/.claude/scripts/extract-learnings.py $ARGUMENTS
 
 If `$ARGUMENTS` is empty, it analyzes the latest session. Pass `--since YYYY-MM-DD` or `--file <path>` to customize scope.
 
-- If no pairs found: tell user "Nothing to reflect on" and stop
-- If pairs found: capture the output and proceed to Phase 2
+- If no pairs found -- tell user "Nothing to reflect on" and stop
+- If pairs found -- capture the output and proceed to Phase 2
 
 ---
 
@@ -41,47 +41,56 @@ For each candidate pair from Phase 1, determine:
    - Workflow patterns (user repeatedly does something a specific way)
    - Implicit feedback (user rephrases, asks again, provides what Claude should have known)
 
-2. **Check rejections** — Read `~/.claude/knowledge/self/rejections.md` (if it exists). For each candidate:
-   - If it matches a previously rejected learning (same topic + target file): **skip silently**
-   - If it *contradicts* a previously rejected learning: flag as **potential reversal** — present to user
+2. **Check rejections** — Read `~/.claude/knowledge/self/rejections.md`. For each candidate:
+   - If it matches a previously rejected learning (same topic + target file): **skip silently**. Note in output: "Skipped: matches rejected learning from [date]"
+   - If it *contradicts* a previously rejected learning (opposite of what was rejected): flag as **potential reversal** — present to user with context from the rejection log
 
 3. **Classify and route** each real learning using the routing table below.
 
 4. **Check for duplicates** — Read the target file and verify the learning isn't already captured.
 
-5. **Scan for contradictions** — For each proposed change:
+5. **Scan for contradictions** — For each proposed change with a target file:
    a. Read the target file
-   b. Read up to 5 related files (same directory + shared tags)
-   c. If contradiction found, flag it:
+   b. Read up to 5 related files: same directory + shared tags (YAML `tags` field) + wiki-linked files
+   c. Scan for statements that **directly contradict** the proposed change
+   d. If contradiction found, flag it for Phase 3 conflict resolution:
       ```
       CONFLICT with [file.md:line]:
         Existing: "[quoted text]"
         Proposed: "[new learning]"
       ```
+   e. **Update feedback counters** — If the contradiction traces to a specific existing rule/learning entry, increment its `harmful` counter in `state/rule-feedback.json`
 
 6. **Update feedback counters** — Read `~/.claude/state/rule-feedback.json` (create if missing). For each finding:
 
-   a. If a correction **contradicts** an existing rule: increment `harmful` for that rule
+   a. If a correction **contradicts** an existing rule -- increment `harmful` for that rule:
       - Key format: `"<relative-path>::<section or first 60 chars of rule>"`
-   b. If the session had **no corrections** in an area covered by a rule: increment `helpful`
-   c. Write updated counters back
-   d. **Flag unhealthy rules:**
-      - `harmful >= 3`: flag for review or removal
-      - `harmful / (helpful + harmful) > 0.5` with 4+ signals: flag as unreliable
-      - `helpful >= 5` with `harmful == 0`: mark as stable
 
-7. **For multi-session scans** (`--since`): Track if the same learning appears across 2+ sessions.
-   - 2+ occurrences: suggest knowledge file
-   - 3+ occurrences: flag for promotion to rule
+   b. If the session had **no corrections** in an area covered by a rule, and the rule was relevant to work done this session -- increment `helpful`
+
+   c. Write updated counters back to `state/rule-feedback.json`
+
+   d. **Flag unhealthy rules** for Phase 3:
+      - `harmful >= 3` -- flag: "This rule has been contradicted 3 times. Review or remove?"
+      - `harmful / (helpful + harmful) > 0.5` with 4+ total signals -- flag as unreliable
+      - `helpful >= 5` with `harmful == 0` -- mark as "stable" (note in output, no action needed)
+
+7. **For multi-session scans** (`--since`): Track if the same learning appears across 2+ sessions. Flag for promotion:
+   - 2+ occurrences -- suggest knowledge file if not already there
+   - 3+ occurrences -- flag for promotion to rule
+   - **Exception:** if the learning contradicts a rejected entry (Claude keeps making the same mistake), promote immediately to rule on 2nd occurrence
 
 ### Routing Table
 
 | Category | Target File |
 |---|---|
-| Workflow correction | `~/.claude/rules/workflow.md` |
+| Task/operational correction | `~/.claude/rules/tasks.md` |
+| Communication preference | `~/.claude/rules/communication.md` |
 | Session management | `~/.claude/rules/sessions.md` |
+| Security/git correction | `~/.claude/rules/security.md` |
 | Delegation pattern | `~/.claude/rules/delegation.md` |
 | Development standard | `~/.claude/rules/development.md` |
+| Research convention | `~/.claude/rules/research.md` |
 | User profile update | `~/.claude/knowledge/user/profile.md` |
 | User goals update | `~/.claude/knowledge/user/goals.md` |
 | Self-knowledge | `~/.claude/knowledge/self/identity.md` |

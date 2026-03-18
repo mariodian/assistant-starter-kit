@@ -7,15 +7,15 @@ A pre-built `~/.claude/` configuration that gives Claude Code persistent memory,
 Claude Code reads `~/.claude/` at startup. This kit installs files there — rules, skills, scripts, and a knowledge directory — so every session starts with context about who you are, what you're building, and how to behave.
 
 ```
-You run setup.sh ──→ Files copied to ~/.claude/ ──→ Claude reads them at startup
-                                                          │
+You run setup.sh ──> Files copied to ~/.claude/ ──> Claude reads them at startup
+                                                          |
                               ┌────────────────────────────┤
-                              ▼                            ▼
+                              v                            v
                      Always loaded:              Loaded on demand:
-                     • CLAUDE.md                 • knowledge/user/profile.md
-                     • rules/*.md                • knowledge/user/goals.md
-                     • MEMORY.md (200 lines)     • knowledge/problems/*.md
-                                                 • knowledge/projects/*.md
+                     - CLAUDE.md                 - knowledge/user/profile.md
+                     - rules/*.md                - knowledge/user/goals.md
+                     - MEMORY.md (200 lines)     - knowledge/problems/*.md
+                                                 - knowledge/projects/*.md
 ```
 
 **On-demand loading is how this avoids context bloat.** Your `CLAUDE.md` contains a markdown table — a map of file paths and one-line descriptions. Claude sees the table at startup (~20-30 lines), then uses `Read` to open specific files when they're relevant to the current task. A typical session loads 3-5 files out of however many you have.
@@ -28,14 +28,16 @@ This is different from the `@import` syntax in `CLAUDE.md`, which loads files in
 |---|---|
 | `/onboard` | 20-30 min guided setup: profile, 12 Favorite Problems, goals, tasks, AI identity |
 | `/tasks` | SQLite-backed task management. Tasks connect to your goals and problems |
-| `/plan` | 6-phase gated workflow: explore → discover tools → design → approve → implement → verify |
+| `/plan` | 6-phase gated workflow: explore, discover tools, design, approve, implement, verify |
 | `/reflect` | Extracts corrections and preferences from sessions, routes them to the right files |
+| `/bootstrap` | Sets up any project's `.claude/` for agentic development (CLAUDE.md, CODEBASE.md, docs/) |
+| `/create-skill` | Scaffolds new skills with validation — extend the system with your own workflows |
 | Security guard | Blocks secrets access, force-push, writes outside `$HOME`, `rm -rf` |
 | Session persistence | Pre-compact hook saves state before context compression. Session reminders after 10 min |
 | Delegation rules | Subagent orchestration: authority boundaries, knowledge flow, quality control |
-| Agent handoff | Structured format for chaining subagents without losing context |
 | Agent definitions | 4 pre-built agents: code-reviewer, bug-fixer, implementer, researcher |
 | Development standards | Code quality limits, testing philosophy, commit conventions |
+| Radical honesty | No flattery, no hype — specific praise when earned, problems first |
 
 ## Setup (5 minutes)
 
@@ -66,12 +68,13 @@ Type `/onboard` — Claude walks you through defining your profile, problems, go
 ├── MEMORY.md                  # Cross-session index (first 200 lines auto-loaded)
 ├── settings.json              # Hooks, permissions, security config
 ├── rules/
-│   ├── sessions.md            # Session logging protocol
-│   ├── workflow.md            # Git discipline, file management
-│   ├── tasks.md               # Task alignment rules
+│   ├── communication.md       # Radical honesty, verification, review protocol
+│   ├── security.md            # Path boundaries, secrets, git discipline
+│   ├── sessions.md            # Session start/end protocols, content routing
+│   ├── tasks.md               # Task alignment, completion verification, operational rules
 │   ├── delegation.md          # Subagent orchestration patterns
 │   ├── development.md         # Code quality, testing, commits
-│   └── handoff.md             # Agent handoff format
+│   └── research.md            # Source priority, endpoint verification, output format
 ├── agents/
 │   ├── code-reviewer.md       # Reviews diffs for bugs, security, style
 │   ├── bug-fixer.md           # Investigates, reproduces, fixes bugs + writes tests
@@ -89,9 +92,18 @@ Type `/onboard` — Claude walks you through defining your profile, problems, go
 │   ├── plan-and-implement/    # Structured build workflow
 │   │   ├── SKILL.md
 │   │   └── LEARNINGS.md
-│   └── reflect/               # Session learning extraction
+│   ├── reflect/               # Session learning extraction
+│   │   ├── SKILL.md
+│   │   └── LEARNINGS.md
+│   ├── bootstrap/             # Project .claude/ setup
+│   │   ├── SKILL.md
+│   │   └── LEARNINGS.md
+│   └── create-skill/          # Skill scaffolding + validation
 │       ├── SKILL.md
-│       └── LEARNINGS.md
+│       ├── LEARNINGS.md
+│       └── scripts/
+│           ├── init_skill.py
+│           └── validate_skill.py
 ├── knowledge/                 # Claude reads these on demand
 │   ├── self/identity.md       # AI self-knowledge (created by /onboard)
 │   ├── user/profile.md        # Your profile (created by /onboard)
@@ -121,6 +133,20 @@ The guard script (`scripts/global-guard.py`) hooks into Claude Code's `PreToolUs
 
 Customize by editing `scripts/global-guard.py` — add directory blocks, file extension rules, or audit logging.
 
+## Rules System
+
+Rules in `rules/` are loaded every session. They constrain Claude's behavior:
+
+| Rule | What It Does |
+|---|---|
+| `communication.md` | Radical honesty, verify-before-assuming, review=revise, audit=fix |
+| `security.md` | Hard blocks, git discipline, secrets management, project isolation |
+| `sessions.md` | Start/end protocols, content routing table, context management |
+| `tasks.md` | Task alignment checks, completion verification, operational guidelines |
+| `delegation.md` | Subagent authority boundaries, knowledge flow, quality control |
+| `development.md` | Code quality limits, testing philosophy, commit conventions |
+| `research.md` | Source priority, endpoint verification, synthesis rules |
+
 ## Agent Definitions
 
 The `agents/` directory contains pre-built agent definitions for common development tasks. These work with Claude Code's Agent tool for delegating work to subagents.
@@ -128,7 +154,7 @@ The `agents/` directory contains pre-built agent definitions for common developm
 | Agent | Purpose | Writes Code? |
 |---|---|---|
 | `code-reviewer` | Reviews diffs for bugs, security issues, style violations, test gaps | No (read-only) |
-| `bug-fixer` | Takes a symptom → reproduces → finds root cause → fixes + tests | Yes |
+| `bug-fixer` | Takes a symptom, reproduces, finds root cause, fixes + tests | Yes |
 | `implementer` | Implements features from a plan/spec in dependency order | Yes |
 | `researcher` | Explores codebases, reads docs, answers technical questions | No (research only) |
 
@@ -137,11 +163,11 @@ All agents follow the delegation rules: they can read, write, and test, but cann
 ## Self-Improvement Loop
 
 ```
-Session work → Claude notices correction → Writes to knowledge file → Commits
-Next session → Claude reads the file → Doesn't repeat the mistake
+Session work -> Claude notices correction -> Writes to knowledge file -> Commits
+Next session -> Claude reads the file -> Doesn't repeat the mistake
 ```
 
-Same correction twice → gets promoted to a rule (always-loaded, every session).
+Same correction twice -> gets promoted to a rule (always-loaded, every session).
 
 Run `/reflect` periodically to formalize this. It reads your session transcript, detects corrections and preferences, checks for contradictions with existing rules, and tracks which rules are helping vs hurting via feedback counters.
 
@@ -152,8 +178,9 @@ The starter kit is minimal on purpose. As you use it:
 - Claude creates knowledge files as it learns about your projects and preferences
 - Session notes accumulate in `state/sessions/`, creating searchable history
 - Rules evolve — corrections become rules, unhealthy rules get flagged by `/reflect`
-- New skills can be added to `skills/` for workflows worth repeating
+- New skills can be added with `/create-skill` for workflows worth repeating
 - `LEARNINGS.md` files in each skill capture what worked and what didn't
+- Use `/bootstrap` to set up any project for agentic development
 
 The `knowledge/` directory is your assistant's brain. Commit and push it regularly.
 
@@ -161,13 +188,15 @@ The `knowledge/` directory is your assistant's brain. Commit and push it regular
 
 **Project-specific rules:** Create `.claude/rules/my-rule.md` in any project directory. Loads only for that project.
 
-**Deny rules:** Edit `~/.claude/settings.json` → `permissions.deny` to block specific tools or commands globally.
+**Deny rules:** Edit `~/.claude/settings.json` -> `permissions.deny` to block specific tools or commands globally.
 
 **Session reminder timing:** Edit `scripts/session-save-reminder.sh` — change `600` (seconds) to adjust the threshold.
 
 **Compaction prompt:** Edit the PreCompact prompt hook in `settings.json` to customize what Claude preserves during context compression.
 
 **Development standards:** Edit `rules/development.md` to add your language-specific conventions, preferred linters, or stricter limits.
+
+**Company repo protection:** Edit `rules/security.md` to add company-specific blocks (read-only repos, no autonomous push, etc.).
 
 ## Credits
 

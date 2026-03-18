@@ -5,6 +5,39 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.0] - 2026-03-18
+
+### Added
+
+- **`/bootstrap` skill** — Sets up any project's `.claude/` for agentic development. Creates CLAUDE.md, CODEBASE.md, module docs, knowledge files, and optional hooks. Includes LEARNINGS.md with battle-tested patterns.
+- **`/create-skill` skill** — Scaffolds new skills with `init_skill.py` (directory + template) and `validate_skill.py` (convention checker). Full workflow: understand, scaffold, write, validate.
+- **`communication.md` rule** — Radical honesty (no hype, no flattery, specific praise only), verify-before-assuming, review=revise (don't just critique, produce alternatives), audit=fix (fix issues immediately on review requests), verify before external communication.
+- **`security.md` rule** — Hard blocks enforced by global-guard.py, git discipline, secrets management, security-first building, project isolation patterns.
+- **`research.md` rule** — Source priority hierarchy, API/endpoint verification (always test before documenting), synthesis rules, output format conventions.
+
+### Changed
+
+- **`tasks.md` rule** — Expanded from 34 to 65 lines. Added: research request flagging, detailed task completion checklist, session-end task updates, effort tiers (S/M/L), operational guidelines (bias toward action, finish the job, priority drift guard).
+- **`sessions.md` rule** — Expanded from 28 to 40 lines. Added: mandatory session start protocol (read yesterday's notes, check tasks, verify MEMORY.md), content routing table (what goes where), context management guidelines.
+- **`/tasks` skill** — Added: LEARNINGS.md read instruction, blocked tasks query, next_id from config table, counts summary.
+- **`/reflect` skill** — Improved contradiction scanning (wiki-linked files, shared tags), better rejection tracking (skip notes, promotion on 2nd contradiction), updated routing table for new rules (communication.md, security.md, research.md).
+- **CLAUDE.md template** — Added `/bootstrap` and `/create-skill` to Available Skills section.
+- **README** — Updated directory structure, added Rules System section, added `/bootstrap` and `/create-skill` to features table, updated customization section.
+- **setup.sh** — Copies new skills (bootstrap, create-skill with scripts), new rules (communication, security, research). Updated output listing.
+
+### Removed
+
+- **`workflow.md` rule** — Replaced by `security.md` (git discipline) and `communication.md` (verification rules).
+- **`handoff.md` rule** — Replaced by delegation.md patterns and agent definitions. The structured handoff format was rarely used in practice.
+
+### Files
+
+- 3 new rules: `rules/communication.md`, `rules/security.md`, `rules/research.md`
+- 1 new skill: `skills/bootstrap/` (SKILL.md, LEARNINGS.md)
+- 1 new skill: `skills/create-skill/` (SKILL.md, LEARNINGS.md, scripts/init_skill.py, scripts/validate_skill.py)
+- 2 removed rules: `rules/workflow.md`, `rules/handoff.md`
+- Modified: `rules/tasks.md`, `rules/sessions.md`, `skills/tasks/SKILL.md`, `skills/reflect/SKILL.md`, `templates/CLAUDE.md`, `setup.sh`, `README.md`, `CHANGELOG.md`
+
 ## [1.1.1] - 2026-03-13
 
 ### Fixed
@@ -65,6 +98,7 @@ First stable release.
 - 5 scripts: global-guard.py, db.py, extract-learnings.py, pre-compact.sh, session-save-reminder.sh
 - 3 templates: CLAUDE.md, settings.json, gitignore
 
+[2.0.0]: https://github.com/mp-web3/claude-starter-kit/releases/tag/v2.0.0
 [1.1.1]: https://github.com/mp-web3/claude-starter-kit/releases/tag/v1.1.1
 [1.1.0]: https://github.com/mp-web3/claude-starter-kit/releases/tag/v1.1.0
 [1.0.0]: https://github.com/mp-web3/claude-starter-kit/releases/tag/v1.0.0

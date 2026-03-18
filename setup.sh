@@ -42,7 +42,7 @@ install_with_prompt() {
     local install_cmd="${3:-}"
 
     if [[ -z "$install_cmd" && -z "$PKG_INSTALL" ]]; then
-        echo "  ✗ $name — not found. Install it manually and re-run setup."
+        echo "  x $name — not found. Install it manually and re-run setup."
         return 1
     fi
 
@@ -68,7 +68,7 @@ MISSING=0
 
 # --- Homebrew (macOS only) ---
 if [[ "$OS" == "macos" ]] && ! command -v brew >/dev/null 2>&1; then
-    echo "  ✗ Homebrew — not found (needed to install other tools on macOS)"
+    echo "  x Homebrew — not found (needed to install other tools on macOS)"
     read -p "  Install Homebrew? [Y/n] " -n 1 -r
     echo
     if [[ ! $REPLY =~ ^[Nn]$ ]]; then
@@ -85,45 +85,45 @@ fi
 
 # --- Git ---
 if command -v git >/dev/null 2>&1; then
-    echo "  ✓ git ($(git --version | head -c 20))"
+    echo "  ok git ($(git --version | head -c 20))"
 else
-    echo "  ✗ git — not found"
+    echo "  x git — not found"
     install_with_prompt "git" || MISSING=1
 fi
 
 # --- Python 3 ---
 if command -v python3 >/dev/null 2>&1; then
     PY_VER=$(python3 --version 2>&1)
-    echo "  ✓ python3 ($PY_VER)"
+    echo "  ok python3 ($PY_VER)"
 else
-    echo "  ✗ python3 — not found (needed for security guard and task database)"
+    echo "  x python3 — not found (needed for security guard and task database)"
     install_with_prompt "python3" "python3" || MISSING=1
 fi
 
 # --- jq ---
 if command -v jq >/dev/null 2>&1; then
-    echo "  ✓ jq ($(jq --version 2>&1))"
+    echo "  ok jq ($(jq --version 2>&1))"
 else
-    echo "  ✗ jq — not found (needed for statusline and hooks)"
+    echo "  x jq — not found (needed for statusline and hooks)"
     install_with_prompt "jq" || MISSING=1
 fi
 
 # --- trash (safe rm replacement) ---
 if command -v trash >/dev/null 2>&1; then
-    echo "  ✓ trash"
+    echo "  ok trash"
 elif [[ "$OS" == "macos" ]]; then
-    echo "  ✗ trash — not found (safe alternative to rm -rf, moves to Trash)"
+    echo "  x trash — not found (safe alternative to rm -rf, moves to Trash)"
     install_with_prompt "trash" "trash" || true
 elif [[ "$OS" == "linux" ]]; then
-    echo "  ✗ trash-cli — not found (safe alternative to rm -rf)"
+    echo "  x trash-cli — not found (safe alternative to rm -rf)"
     install_with_prompt "trash-cli" "trash-cli" || true
 fi
 
 # --- Claude Code CLI ---
 if command -v claude >/dev/null 2>&1; then
-    echo "  ✓ claude CLI"
+    echo "  ok claude CLI"
 else
-    echo "  ✗ Claude Code CLI — not found"
+    echo "  x Claude Code CLI — not found"
     if command -v npm >/dev/null 2>&1; then
         install_with_prompt "claude" "" "npm install -g @anthropic-ai/claude-code" || MISSING=1
     elif command -v brew >/dev/null 2>&1; then
@@ -178,7 +178,7 @@ echo "Setting up ~/.claude/ ..."
 # -----------------------------------------------
 
 # Create directory structure
-mkdir -p "$CLAUDE_DIR"/{rules,scripts,agents,knowledge/self,knowledge/user,knowledge/problems,knowledge/projects,skills/onboard,skills/tasks,skills/plan-and-implement,skills/reflect,state/sessions}
+mkdir -p "$CLAUDE_DIR"/{rules,scripts,agents,knowledge/self,knowledge/user,knowledge/problems,knowledge/projects,skills/onboard,skills/tasks,skills/plan-and-implement,skills/reflect,skills/bootstrap,skills/create-skill/scripts,state/sessions}
 
 # --- Copy scripts ---
 cp "$SCRIPT_DIR/scripts/global-guard.py" "$CLAUDE_DIR/scripts/"
@@ -201,10 +201,18 @@ done
 # --- Copy skills ---
 cp "$SCRIPT_DIR/skills/onboard/SKILL.md" "$CLAUDE_DIR/skills/onboard/"
 cp "$SCRIPT_DIR/skills/tasks/SKILL.md" "$CLAUDE_DIR/skills/tasks/"
+cp "$SCRIPT_DIR/skills/tasks/LEARNINGS.md" "$CLAUDE_DIR/skills/tasks/"
 cp "$SCRIPT_DIR/skills/plan-and-implement/SKILL.md" "$CLAUDE_DIR/skills/plan-and-implement/"
 cp "$SCRIPT_DIR/skills/plan-and-implement/LEARNINGS.md" "$CLAUDE_DIR/skills/plan-and-implement/"
 cp "$SCRIPT_DIR/skills/reflect/SKILL.md" "$CLAUDE_DIR/skills/reflect/"
 cp "$SCRIPT_DIR/skills/reflect/LEARNINGS.md" "$CLAUDE_DIR/skills/reflect/"
+cp "$SCRIPT_DIR/skills/bootstrap/SKILL.md" "$CLAUDE_DIR/skills/bootstrap/"
+cp "$SCRIPT_DIR/skills/bootstrap/LEARNINGS.md" "$CLAUDE_DIR/skills/bootstrap/"
+cp "$SCRIPT_DIR/skills/create-skill/SKILL.md" "$CLAUDE_DIR/skills/create-skill/"
+cp "$SCRIPT_DIR/skills/create-skill/LEARNINGS.md" "$CLAUDE_DIR/skills/create-skill/"
+cp "$SCRIPT_DIR/skills/create-skill/scripts/init_skill.py" "$CLAUDE_DIR/skills/create-skill/scripts/"
+cp "$SCRIPT_DIR/skills/create-skill/scripts/validate_skill.py" "$CLAUDE_DIR/skills/create-skill/scripts/"
+chmod +x "$CLAUDE_DIR/skills/create-skill/scripts/"*.py
 
 # --- Copy statusline ---
 cp "$SCRIPT_DIR/statusline.sh" "$CLAUDE_DIR/"
@@ -280,13 +288,15 @@ echo "Files installed:"
 echo "  ~/.claude/CLAUDE.md          — global instructions"
 echo "  ~/.claude/MEMORY.md          — cross-session index (first 200 lines auto-loaded)"
 echo "  ~/.claude/settings.json      — hooks + security"
-echo "  ~/.claude/rules/             — session, workflow, handoff, task, delegation, development rules"
+echo "  ~/.claude/rules/             — communication, security, sessions, tasks, delegation, development, research"
 echo "  ~/.claude/agents/            — code-reviewer, bug-fixer, implementer, researcher"
 echo "  ~/.claude/scripts/           — security guard, pre-compact, reminders, db, learning extractor"
 echo "  ~/.claude/skills/onboard/    — guided first-session setup"
 echo "  ~/.claude/skills/tasks/      — task management (/tasks)"
 echo "  ~/.claude/skills/plan-and-implement/ — structured build workflow (/plan)"
 echo "  ~/.claude/skills/reflect/    — session learning extraction (/reflect)"
+echo "  ~/.claude/skills/bootstrap/  — project setup (/bootstrap)"
+echo "  ~/.claude/skills/create-skill/ — skill builder (/create-skill)"
 echo "  ~/.claude/tasks.db           — SQLite task store"
 echo "  ~/.claude/knowledge/         — your assistant's growing brain"
 echo "  ~/.claude/statusline.sh      — context/cost display"

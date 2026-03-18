@@ -46,6 +46,8 @@ When evaluating tasks, content, or opportunities, check against the user's 12 Fa
 - `/tasks` — Manage the task backlog (add, review, complete, metrics)
 - `/plan` — Structured build workflow: explore, design, approve, implement, verify
 - `/reflect` — Extract learnings from the session and route them to the right files
+- `/bootstrap` — Set up a new project's .claude/ for agentic development
+- `/create-skill` — Scaffold and build a new custom skill
 
 ## Agent Definitions
 
