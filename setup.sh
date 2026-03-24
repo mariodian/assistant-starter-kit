@@ -24,11 +24,13 @@ INIT_GIT=0
 CLAUDE_DIR_NAME=.claude
 CLAUDE_DIR=$HOME/$CLAUDE_DIR_NAME
 CLAUDE_CONFIG=settings.json
+CLAUDE_BAK=$CLAUDE_DIR.bak
 
 # OpenCode specifig
 AGENT_DIR_NAME=.opencode
 OPENCODE_DIR=$HOME/.config/opencode
 OPENCODE_CONFIG=opencode.json
+OPENCODE_BAK=$OPENCODE_DIR.bak
 
 # Global agents and skills directory
 DOTAGENTS_DIR=$HOME/.agents
@@ -302,6 +304,25 @@ if [[ -d "$WORKSPACE_DIR" ]]; then
 fi
 
 echo "Setting up..."
+echo ""
+
+# -----------------------------------------------
+# Backup existing config before making changes
+# -----------------------------------------------
+if [[ -d "$CLAUDE_DIR" ]]; then
+  echo "Backing up $CLAUDE_DIR -> $CLAUDE_BAK"
+  rm -rf "$CLAUDE_BAK"
+  cp -a "$CLAUDE_DIR" "$CLAUDE_BAK"
+  echo "  Backup saved."
+fi
+
+if is_agent_opencode && [[ -d "$OPENCODE_DIR" ]]; then
+  echo "Backing up $OPENCODE_DIR -> $OPENCODE_BAK"
+  rm -rf "$OPENCODE_BAK"
+  cp -a "$OPENCODE_DIR" "$OPENCODE_BAK"
+  echo "  Backup saved."
+fi
+
 echo ""
 
 # ===============================================
