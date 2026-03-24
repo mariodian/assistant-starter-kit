@@ -1,35 +1,43 @@
 {
   "$schema": "https://opencode.ai/config.json",
   "permission": {
-    "deny": [
-      "Bash(rm -rf *)",
-      "Bash(rm -fr *)",
-      "Bash(sudo *)",
-      "Bash(mkfs *)",
-      "Bash(dd *)",
-      "Bash(wget *|bash*)",
-      "Bash(wget *| bash*)",
-      "Bash(git push --force*)",
-      "Bash(git push *--force*)",
-      "Bash(git reset --hard*)",
-
-      "Edit(~/.bashrc)",
-      "Edit(~/.zshrc)",
-      "Edit(~/.ssh/**)",
-
-      "Read(~/.ssh/**)",
-      "Read(~/.gnupg/**)",
-      "Read(~/.aws/**)",
-      "Read(~/.azure/**)",
-      "Read(~/.config/gh/**)",
-      "Read(~/.git-credentials)",
-      "Read(~/.docker/config.json)",
-      "Read(~/.kube/**)",
-      "Read(~/.npmrc)",
-      "Read(~/.npm/**)",
-      "Read(~/.pypirc)",
-      "Read(~/.gem/credentials)",
-      "Read(~/Library/Keychains/**)"
-    ]
+    "bash": {
+      "*": "ask",
+      "rm -rf *": "deny",
+      "rm -fr *": "deny",
+      "sudo *": "deny",
+      "mkfs *": "deny",
+      "dd *": "deny",
+      "wget *|bash*": "deny",
+      "wget *| bash*": "deny",
+      "git push --force*": "deny",
+      "git push *--force*": "deny",
+      "git reset --hard*": "deny"
+    },
+    "edit": {
+      "*": "ask",
+      "~/.bashrc": "deny",
+      "~/.zshrc": "deny",
+      "~/.ssh/*": "deny"
+    },
+    "read": {
+      "*": "allow",
+      "*.env": "deny",
+      "*.env.*": "deny",
+      "*.env.example": "allow",
+      "~/.ssh/*": "deny",
+      "~/.gnupg/*": "deny",
+      "~/.aws/*": "deny",
+      "~/.azure/*": "deny",
+      "~/.config/gh/*": "deny",
+      "~/.git-credentials": "deny",
+      "~/.docker/config.json": "deny",
+      "~/.kube/*": "deny",
+      "~/.npmrc": "deny",
+      "~/.npm/*": "deny",
+      "~/.pypirc": "deny",
+      "~/.gem/credentials": "deny",
+      "~/Library/Keychains/*": "deny"
+    }
   }
 }
