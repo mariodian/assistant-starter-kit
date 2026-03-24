@@ -27,7 +27,7 @@ CLAUDE_CONFIG=settings.json
 CLAUDE_BAK=$CLAUDE_DIR.bak
 
 # OpenCode specifig
-AGENT_DIR_NAME=.opencode
+OPENCODE_DIR_NAME=.opencode
 OPENCODE_DIR=$HOME/.config/opencode
 OPENCODE_CONFIG=opencode.json
 OPENCODE_BAK=$OPENCODE_DIR.bak
@@ -288,8 +288,8 @@ if [[ -f "$CLAUDE_DIR/$CLAUDE_CONFIG" ]]; then
 fi
 
 if is_agent_opencode; then
-  if [[ -f "$AGENT_DIR/$OPENCODE_CONFIG" ]]; then
-    echo "Warning: $AGENT_DIR/$OPENCODE_CONFIG already exists."
+  if [[ -f "$OPENCODE_DIR/$OPENCODE_CONFIG" ]]; then
+    echo "Warning: $OPENCODE_DIR/$OPENCODE_CONFIG already exists."
     read -ep "Merge? This will merge your current config with new settings. (y/N) " -n 1 -r
     echo
     [[ $REPLY =~ ^[Yy]$ ]] || { echo "Aborted."; exit 0; }
@@ -356,13 +356,13 @@ else
 fi
 
 if is_agent_opencode; then
-  if [[ -f "$AGENT_DIR/$OPENCODE_CONFIG" ]]; then
+  if [[ -f "$OPENCODE_DIR/$OPENCODE_CONFIG" ]]; then
     TEMP_SETTINGS=$(mktemp)
-    jq -s '.[0] * .[1]' "$SCRIPT_DIR/templates/$OPENCODE_CONFIG" "$AGENT_DIR/$OPENCODE_CONFIG" > "$TEMP_SETTINGS"
-    mv "$TEMP_SETTINGS" "$AGENT_DIR/$OPENCODE_CONFIG"
+    jq -s '.[0] * .[1]' "$SCRIPT_DIR/templates/$OPENCODE_CONFIG" "$OPENCODE_DIR/$OPENCODE_CONFIG" > "$TEMP_SETTINGS"
+    mv "$TEMP_SETTINGS" "$OPENCODE_DIR/$OPENCODE_CONFIG"
     echo "OpenCode settings merged."
   else
-    cp "$SCRIPT_DIR/templates/$OPENCODE_CONFIG" "$AGENT_DIR/$OPENCODE_CONFIG"
+    cp "$SCRIPT_DIR/templates/$OPENCODE_CONFIG" "$OPENCODE_DIR/$OPENCODE_CONFIG"
   fi
 fi
 
@@ -382,7 +382,7 @@ if is_agent_opencode; then
   # --- Generate global AGENTS.md ---
   sed -e "s/{{USER_NAME}}/$USER_NAME/g" \
     -e "s|{{USER_BIO}}|$USER_BIO|g" \
-    "$SCRIPT_DIR/templates/global-AGENTS.md" > "$AGENT_DIR/AGENTS.md"
+    "$SCRIPT_DIR/templates/global-AGENTS.md" > "$OPENCODE_DIR/AGENTS.md"
 fi
 
 # --- Write workspace.conf ---
@@ -419,7 +419,7 @@ echo "Phase 2: Bootstrapping workspace at $WORKSPACE_DIR ..."
 mkdir -p "$WORKSPACE_DIR"/{$CLAUDE_DIR_NAME,knowledge/self,knowledge/user,knowledge/problems,knowledge/projects,scripts,state/sessions}
 
 if is_agent_opencode; then
-  mkdir -p "$WORKSPACE_DIR/$AGENT_DIR_NAME"
+  mkdir -p "$WORKSPACE_DIR/$OPENCODE_DIR_NAME"
 fi
 
 # --- Generate workspace CLAUDE.md ---
@@ -445,8 +445,8 @@ ln -sf "$DOTAGENTS_DIR/skills" "$WORKSPACE_DIR/$CLAUDE_DIR_NAME"
 ln -sf "$DOTAGENTS_DIR/agents" "$WORKSPACE_DIR/$CLAUDE_DIR_NAME"
 
 if is_agent_opencode; then
-  ln -sf "$DOTAGENTS_DIR/skills" "$WORKSPACE_DIR/$AGENT_DIR_NAME"
-  ln -sf "$DOTAGENTS_DIR/agents" "$WORKSPACE_DIR/$AGENT_DIR_NAME"
+  ln -sf "$DOTAGENTS_DIR/skills" "$WORKSPACE_DIR/$OPENCODE_DIR_NAME"
+  ln -sf "$DOTAGENTS_DIR/agents" "$WORKSPACE_DIR/$OPENCODE_DIR_NAME"
 fi
 
 # --- Copy workspace .gitignore ---
@@ -553,8 +553,8 @@ echo "  $CLAUDE_DIR_NAME/CLAUDE.md  — workspace instructions"
 echo "  $CLAUDE_DIR_NAME/skills/    — symlinks to global skills (onboard, tasks, plan, reflect, bootstrap, create-skill)"
 echo "  $CLAUDE_DIR_NAME/agents/      — symlinks to global agents (code-reviewer, bug-fixer, implementer, researcher)"
 if is_agent_opencode; then
-echo "  $AGENT_DIR_NAME/skills/    — (OpenCode only) symlinks to global skills"
-echo "  $AGENT_DIR_NAME/agents/      — (OpenCode only) symlinks to global agents"
+echo "  $OPENCODE_DIR_NAME/skills/    — (OpenCode only) symlinks to global skills"
+echo "  $OPENCODE_DIR_NAME/agents/      — (OpenCode only) symlinks to global agents"
 fi
 echo "  knowledge/       — your assistant's growing brain"
 echo "  scripts/       — task database, learning extractor"
