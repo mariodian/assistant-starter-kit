@@ -328,7 +328,7 @@ cp -r "$SCRIPT_DIR/rules/" "$CLAUDE_DIR/rules/"
 if [[ -f "$CLAUDE_DIR/$CLAUDE_CONFIG" ]]; then
   TEMP_SETTINGS=$(mktemp)
   jq -s '.[0] * .[1]' "$SCRIPT_DIR/templates/$CLAUDE_CONFIG" "$CLAUDE_DIR/$CLAUDE_CONFIG" > "$TEMP_SETTINGS"
-  mv "$TEMP_SETTINGS" "$CLAUDE_DIR/$CLAUDE_CONFIG.test"
+  mv "$TEMP_SETTINGS" "$CLAUDE_DIR/$CLAUDE_CONFIG"
   echo "Settings merged."
 else
   cp "$SCRIPT_DIR/templates/$CLAUDE_CONFIG" "$CLAUDE_DIR/$CLAUDE_CONFIG"
@@ -338,7 +338,7 @@ if is_agent_opencode; then
   if [[ -f "$AGENT_DIR/$OPENCODE_CONFIG" ]]; then
     TEMP_SETTINGS=$(mktemp)
     jq -s '.[0] * .[1]' "$SCRIPT_DIR/templates/$OPENCODE_CONFIG" "$AGENT_DIR/$OPENCODE_CONFIG" > "$TEMP_SETTINGS"
-    mv "$TEMP_SETTINGS" "$AGENT_DIR/$OPENCODE_CONFIG.test"
+    mv "$TEMP_SETTINGS" "$AGENT_DIR/$OPENCODE_CONFIG"
     echo "OpenCode settings merged."
   else
     cp "$SCRIPT_DIR/templates/$OPENCODE_CONFIG" "$AGENT_DIR/$OPENCODE_CONFIG"
