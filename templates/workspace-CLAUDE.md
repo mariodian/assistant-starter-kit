@@ -35,12 +35,13 @@ When evaluating tasks, content, or opportunities, check against the user's 12 Fa
 
 Pre-built agents for delegation via the Agent tool:
 
-| Agent | File | Purpose |
-|---|---|---|
-| Code Reviewer | `agents/code-reviewer.md` | Reviews diffs — read-only, never modifies files |
-| Bug Fixer | `agents/bug-fixer.md` | Investigates, reproduces, fixes + writes regression tests |
-| Implementer | `agents/implementer.md` | Implements features from a plan/spec |
-| Researcher | `agents/researcher.md` | Explores codebases and docs — research only, no code |
+| Agent         | File                      | Purpose                                                   |
+| ------------- | ------------------------- | --------------------------------------------------------- |
+| Code Reviewer | `agents/code-reviewer.md` | Reviews diffs — read-only, never modifies files           |
+| Bug Fixer     | `agents/bug-fixer.md`     | Investigates, reproduces, fixes + writes regression tests |
+| Implementer   | `agents/implementer.md`   | Implements features from a plan/spec                      |
+| Researcher    | `agents/researcher.md`    | Explores codebases and docs — research only, no code      |
+| Refactor      | `agents/refactor.md`      | Improves code quality without changing behavior           |
 
 All agents follow delegation rules: can read/write/test, cannot commit/push/architect.
 
